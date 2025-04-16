@@ -12,14 +12,12 @@ export default {
     error: (message: string) => p.log.error(message),
     warn: (message: string) => p.log.warn(message),
   },
-  text: async <T extends string>(options: p.TextOptions<T>) => {
+  text: async (options: p.TextOptions) => {
     return await p.text(options) as string;
   },
-  select: async <Option extends string>(
-    options: p.SelectOptions<Option>
-  ) => {
-    const result = await p.select(options);
-    return result as Option;
+  select: async (options: any) => {
+    const result = await p.select(options as any);
+    return result as any;
   },
   confirm: async (options: p.ConfirmOptions) => {
     const result = await p.confirm(options);

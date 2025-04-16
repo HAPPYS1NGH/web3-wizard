@@ -1,6 +1,9 @@
+/* eslint-disable max-lines */
+
 import chalk from 'chalk';
 import {
   abort,
+  askForAIConsent,
   confirmContinueIfNoOrDirtyGitRepo,
   ensurePackageIsInstalled,
   getOrAskForProjectData,
@@ -12,10 +15,16 @@ import {
   runPrettierIfInstalled,
 } from '../utils/clack-utils';
 import { getPackageVersion, hasPackageInstalled } from '../utils/package-json';
-import { getNextJsRouter, getNextJsRouterName, NextJsRouter } from './utils';
+import {
+  getNextJsRouter,
+  getNextJsRouterName,
+  getNextJsVersionBucket,
+  NextJsRouter,
+} from './utils';
 import clack from '../utils/clack';
 import { Integration, ISSUES_URL } from '../lib/constants';
 import { getNextjsAppRouterDocs, getNextjsPagesRouterDocs } from './docs';
+import { analytics } from '../utils/analytics';
 import { addOrUpdateEnvironmentVariables } from '../utils/environment';
 import {
   generateFileChangesForIntegration,
@@ -23,11 +32,23 @@ import {
   getRelevantFilesForIntegration,
 } from '../utils/file-utils';
 import type { WizardOptions } from '../utils/types';
+import { askForCloudRegion } from '../utils/clack-utils';
 
 export async function runNextjsWizard(options: WizardOptions): Promise<void> {
   printWelcome({
-    wizardName: 'Web3 WalletConnect Next.js Wizard',
+    wizardName: 'Web3 Wallet Wizard',
   });
+
+  const aiConsent = await askForAIConsent(options);
+
+  if (!aiConsent) {
+    await abort(
+      'The Next.js wizard requires AI to get setup right now. Please view the docs to setup Next.js manually instead: https://posthog.com/docs/libraries/next-js',
+      0,
+    );
+  }
+
+  const cloudRegion = options.cloudRegion ?? (await askForCloudRegion());
 
   const typeScriptDetected = isUsingTypeScript(options);
 
@@ -39,18 +60,22 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
 
   const nextVersion = getPackageVersion('next', packageJson);
 
-  const { projectId, wizardHash } = await getOrAskForProjectData({
-    installDir: options.installDir,
+  analytics.setTag('nextjs-version', getNextJsVersionBucket(nextVersion));
+
+  const { projectApiKey, wizardHash, host } = await getOrAskForProjectData({
+    ...options,
+    cloudRegion,
   });
 
-  const wagmiInstalled = hasPackageInstalled('wagmi', packageJson);
-  const walletConnectInstalled = hasPackageInstalled('@walletconnect/ethereum-provider', packageJson);
+  const sdkAlreadyInstalled = hasPackageInstalled('posthog-js', packageJson);
+
+  analytics.setTag('sdk-already-installed', sdkAlreadyInstalled);
 
   const { packageManager: packageManagerFromInstallStep } =
     await installPackage({
-      packageName: 'wagmi',
-      packageNameDisplayLabel: 'wagmi',
-      alreadyInstalled: wagmiInstalled,
+      packageName: 'posthog-js',
+      packageNameDisplayLabel: 'posthog-js',
+      alreadyInstalled: !!packageJson?.dependencies?.['posthog-js'],
       forceInstall: options.forceInstall,
       askBeforeUpdating: false,
       installDir: options.installDir,
@@ -58,32 +83,10 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
     });
 
   await installPackage({
-    packageName: 'viem',
-    packageNameDisplayLabel: 'viem',
+    packageName: 'posthog-node',
+    packageNameDisplayLabel: 'posthog-node',
     packageManager: packageManagerFromInstallStep,
-    alreadyInstalled: hasPackageInstalled('viem', packageJson),
-    forceInstall: options.forceInstall,
-    askBeforeUpdating: false,
-    installDir: options.installDir,
-    integration: Integration.nextjs,
-  });
-
-  await installPackage({
-    packageName: '@tanstack/react-query',
-    packageNameDisplayLabel: '@tanstack/react-query',
-    packageManager: packageManagerFromInstallStep,
-    alreadyInstalled: hasPackageInstalled('@tanstack/react-query', packageJson),
-    forceInstall: options.forceInstall,
-    askBeforeUpdating: false,
-    installDir: options.installDir,
-    integration: Integration.nextjs,
-  });
-
-  await installPackage({
-    packageName: '@walletconnect/ethereum-provider',
-    packageNameDisplayLabel: '@walletconnect/ethereum-provider',
-    packageManager: packageManagerFromInstallStep,
-    alreadyInstalled: walletConnectInstalled,
+    alreadyInstalled: !!packageJson?.dependencies?.['posthog-node'],
     forceInstall: options.forceInstall,
     askBeforeUpdating: false,
     installDir: options.installDir,
@@ -99,11 +102,12 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
 
   const installationDocumentation = getInstallationDocumentation({
     router,
+    host,
     language: typeScriptDetected ? 'typescript' : 'javascript',
   });
 
   clack.log.info(
-    `Reviewing WalletConnect documentation for ${getNextJsRouterName(router)}`,
+    `Reviewing PostHog documentation for ${getNextJsRouterName(router)}`,
   );
 
   const filesToChange = await getFilesToChange({
@@ -111,7 +115,7 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
     relevantFiles,
     documentation: installationDocumentation,
     wizardHash,
-    projectId,
+    cloudRegion,
   });
 
   await generateFileChangesForIntegration({
@@ -120,12 +124,12 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
     wizardHash,
     installDir: options.installDir,
     documentation: installationDocumentation,
-    projectId,
+    cloudRegion,
   });
 
   await addOrUpdateEnvironmentVariables({
     variables: {
-      NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: projectId,
+      NEXT_PUBLIC_POSTHOG_KEY: projectApiKey,
     },
     installDir: options.installDir,
     integration: Integration.nextjs,
@@ -140,23 +144,30 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
   });
 
   clack.outro(`
-${chalk.green('Successfully installed WalletConnect!')} ${`\n\nYou should validate your setup by (re)starting your dev environment (e.g. ${chalk.cyan(
-    `${packageManagerForOutro.runScriptCommand} dev`,
-  )})`}
+${chalk.green('Successfully installed PostHog!')} ${`\n\n${aiConsent
+      ? `Note: This uses experimental AI to setup your project. It might have got it wrong, please check!\n`
+      : ``
+    }You should validate your setup by (re)starting your dev environment (e.g. ${chalk.cyan(
+      `${packageManagerForOutro.runScriptCommand} dev`,
+    )})`}
 
 ${chalk.dim(`If you encounter any issues, let us know here: ${ISSUES_URL}`)}`);
+
+  await analytics.shutdown('success');
 }
 
 function getInstallationDocumentation({
   router,
+  host,
   language,
 }: {
   router: NextJsRouter;
+  host: string;
   language: 'typescript' | 'javascript';
 }) {
   if (router === NextJsRouter.PAGES_ROUTER) {
-    return getNextjsPagesRouterDocs({ language });
+    return getNextjsPagesRouterDocs({ host, language });
   }
 
-  return getNextjsAppRouterDocs({ language });
+  return getNextjsAppRouterDocs({ host, language });
 }

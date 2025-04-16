@@ -5,7 +5,6 @@ import clack from './utils/clack';
 import path from 'path';
 import { INTEGRATION_CONFIG, INTEGRATION_ORDER } from './lib/config';
 import { runNextjsWizard } from './nextjs/nextjs-wizard';
-import { runReownWizard } from './integrations/reown/reown-wizard';
 
 type Args = {
   integration?: Integration;
@@ -34,7 +33,7 @@ async function runWizard(argv: Args) {
     default: finalArgs.default ?? false,
   };
 
-  clack.intro(`Welcome to the Web3 WalletConnect setup wizard 🚀`);
+  clack.intro(`Welcome to the Web3 Wallet setup wizard 🚀`);
 
   const integration =
     finalArgs.integration ?? (await getIntegrationForSetup(wizardOptions));

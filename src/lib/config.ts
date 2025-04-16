@@ -1,75 +1,57 @@
+import { getPackageDotJson } from '../utils/clack-utils';
+import { hasPackageInstalled } from '../utils/package-json';
+import type { WizardOptions } from '../utils/types';
 import { Integration } from './constants';
-import { existsSync } from 'fs';
-import path from 'path';
 
 type IntegrationConfig = {
-  detect: (options: { installDir: string }) => Promise<boolean>;
+  name: string;
+  filterPatterns: string[];
+  ignorePatterns: string[];
+  detect: (options: Pick<WizardOptions, 'installDir'>) => Promise<boolean>;
+  generateFilesRules: string;
+  filterFilesRules: string;
 };
 
-export const INTEGRATION_CONFIG: Record<Integration, IntegrationConfig> = {
+export const INTEGRATION_CONFIG = {
   [Integration.nextjs]: {
-    detect: async ({ installDir }) => {
-      const packageJsonPath = path.join(installDir, 'package.json');
-      if (!existsSync(packageJsonPath)) {
-        return false;
-      }
-
-      try {
-        const packageJson = require(packageJsonPath);
-        return !!(
-          packageJson.dependencies?.next || packageJson.devDependencies?.next
-        );
-      } catch (e) {
-        return false;
-      }
+    name: 'Next.js',
+    filterPatterns: ['**/*.{tsx,ts,jsx,js,mjs,cjs}'],
+    ignorePatterns: [
+      'node_modules',
+      'dist',
+      'build',
+      'public',
+      'static',
+      'next-env.d.*',
+    ],
+    detect: async (options) => {
+      const packageJson = await getPackageDotJson(options);
+      return hasPackageInstalled('next', packageJson);
     },
+    generateFilesRules: '',
+    filterFilesRules: '',
   },
   [Integration.react]: {
-    detect: async ({ installDir }) => {
-      const packageJsonPath = path.join(installDir, 'package.json');
-      if (!existsSync(packageJsonPath)) {
-        return false;
-      }
-
-      try {
-        const packageJson = require(packageJsonPath);
-        return !!(
-          packageJson.dependencies?.react || packageJson.devDependencies?.react
-        );
-      } catch (e) {
-        return false;
-      }
+    name: 'React',
+    filterPatterns: ['**/*.{tsx,ts,jsx,js}'],
+    ignorePatterns: [
+      'node_modules',
+      'dist',
+      'build',
+      'public',
+      'static',
+      'assets',
+    ],
+    detect: async (options) => {
+      const packageJson = await getPackageDotJson(options);
+      return hasPackageInstalled('react', packageJson);
     },
+    generateFilesRules: '',
+    filterFilesRules: '',
   },
-  [Integration.reown]: {
-    detect: async ({ installDir }) => {
-      const packageJsonPath = path.join(installDir, 'package.json');
-      if (!existsSync(packageJsonPath)) {
-        return false;
-      }
+} as const satisfies Record<Integration, IntegrationConfig>;
 
-      try {
-        const packageJson = require(packageJsonPath);
-        // Check if it's a Next.js project first
-        const hasNextJs = !!(
-          packageJson.dependencies?.next || packageJson.devDependencies?.next
-        );
-        
-        // Check if Reown is already installed
-        const hasReown = !!(
-          packageJson.dependencies?.['@reownit/core'] || 
-          packageJson.devDependencies?.['@reownit/core'] ||
-          packageJson.dependencies?.['@reownit/next'] || 
-          packageJson.devDependencies?.['@reownit/next']
-        );
-        
-        // Return true for Next.js projects (we'll ask if they want to install Reown)
-        return hasNextJs;
-      } catch (e) {
-        return false;
-      }
-    },
-  },
-};
-
-export const INTEGRATION_ORDER = [Integration.nextjs, Integration.react, Integration.reown];
+export const INTEGRATION_ORDER = [
+  Integration.nextjs,
+  Integration.react,
+] as const;

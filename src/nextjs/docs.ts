@@ -1,304 +1,265 @@
-export function getNextjsAppRouterDocs({
+import { getAssetHostFromHost, getUiHostFromHost } from '../utils/urls';
+
+export const getNextjsAppRouterDocs = ({
+  host,
   language,
 }: {
+  host: string;
   language: 'typescript' | 'javascript';
-}): string {
-  const ext = language === 'typescript' ? 'tsx' : 'jsx';
-  
+}) => {
   return `
-# Next.js App Router WalletConnect Integration
+==============================
+FILE: PostHogProvider.${language === 'typescript' ? 'tsx' : 'jsx'
+    } (put it somewhere where client files are, like the components folder)
+LOCATION: Wherever other providers are, or the components folder
+==============================
+Changes:
+- Create a PostHogProvider component that will be imported into the layout file.
 
-## Step 1: Create a root provider component
+Example:
+--------------------------------------------------
+"use client"
 
-Create a file at \`app/providers.${ext}\`:
+import posthog from "posthog-js"
+import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react"
+import { Suspense, useEffect } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
 
-\`\`\`${ext}
-'use client'
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider, createConfig, http } from 'wagmi'
-import { mainnet, sepolia } from 'wagmi/chains'
-import { metaMask, walletConnect } from 'wagmi/connectors'
-import { ReactNode, useState } from 'react'
-
-// Get projectId from environment variable
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as string
-
-// Create wagmi config
-const config = createConfig({
-  chains: [mainnet, sepolia],
-  transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-  },
-  connectors: [
-    metaMask(),
-    walletConnect({
-      projectId,
-      metadata: {
-        name: 'Your App Name',
-        description: 'Your app description',
-        url: 'https://yourapp.com',
-        icons: ['https://yourapp.com/icon.png'],
-      },
-    }),
-  ],
-})
-
-export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      api_host: "/ingest",
+      ui_host: "${getUiHostFromHost(host)}",
+      capture_pageview: false, // We capture pageviews manually
+      capture_pageleave: true, // Enable pageleave capture
+    })
+  }, [])
 
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </WagmiProvider>
+    <PHProvider client={posthog}>
+      <SuspendedPostHogPageView />
+      {children}
+    </PHProvider>
   )
 }
-\`\`\`
 
-## Step 2: Add the provider to your layout
 
-Update your \`app/layout.${ext}\` file:
+function PostHogPageView() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const posthog = usePostHog()
 
-\`\`\`${ext}
-import { Providers } from './providers'
+  useEffect(() => {
+    if (pathname && posthog) {
+      let url = window.origin + pathname
+      const search = searchParams.toString()
+      if (search) {
+        url += "?" + search
+      }
+      posthog.capture("$pageview", { "$current_url": url })
+    }
+  }, [pathname, searchParams, posthog])
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+  return null
+}
+
+function SuspendedPostHogPageView() {
+  return (
+    <Suspense fallback={null}>
+      <PostHogPageView />
+    </Suspense>
+  )
+}
+--------------------------------------------------
+
+==============================
+FILE: layout.${language === 'typescript' ? 'tsx' : 'jsx'}
+LOCATION: Wherever the root layout is
+==============================
+Changes:
+- Import the PostHogProvider from the providers file and wrap the app in it.
+
+Example:
+--------------------------------------------------
+// other imports
+import { PostHogProvider } from "LOCATION_OF_POSTHOG_PROVIDER"
+
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Providers>
+        <PostHogProvider>
+          {/* other providers */}
           {children}
-        </Providers>
+          {/* other providers */}
+        </PostHogProvider>
       </body>
     </html>
   )
 }
-\`\`\`
+--------------------------------------------------
 
-## Step 3: Create a Connect Button component
+==============================
+FILE: posthog.${language === 'typescript' ? 'ts' : 'js'}
+LOCATION: Wherever works best given the project structure
+==============================
+Changes:
+- Initialize the PostHog Node.js client
 
-Create a file at \`app/components/ConnectButton.${ext}\`:
+Example:
+--------------------------------------------------
+import { PostHog } from "posthog-node"
 
-\`\`\`${ext}
-'use client'
-
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
-
-export function ConnectButton() {
-  const { connectors, connect, status: connectStatus, error: connectError } = useConnect()
-  const { disconnect, status: disconnectStatus } = useDisconnect()
-  const { isConnected, address } = useAccount()
-
-  if (isConnected) {
-    return (
-      <div>
-        <div>Connected to {address?.substring(0, 6)}...{address?.substring(address.length - 4)}</div>
-        <button 
-          onClick={() => disconnect()} 
-          disabled={disconnectStatus === 'pending'}
-        >
-          Disconnect
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      {connectors.map((connector) => (
-        <button
-          key={connector.uid}
-          onClick={() => connect({ connector })}
-          disabled={connectStatus === 'pending'}
-        >
-          Connect with {connector.name}
-          {connectStatus === 'pending' && ' (connecting...)'}
-        </button>
-      ))}
-      
-      {connectError && <div style={{ color: 'red' }}>{connectError.message}</div>}
-    </div>
-  )
+export default function PostHogClient() {
+  const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+    host: "${host}",
+    flushAt: 1,
+    flushInterval: 0,
+  })
+  return posthogClient
 }
-\`\`\`
+--------------------------------------------------
 
-## Step 4: Use the Connect Button in your app
+==============================
+FILE: next.config.{js,ts,mjs,cjs}
+LOCATION: Wherever the root next config is
+==============================
+Changes:
+- Add rewrites to the Next.js config to support PostHog, if there are existing rewrites, add the PostHog rewrites to them.
+- Add skipTrailingSlashRedirect to the Next.js config to support PostHog trailing slash API requests.
+- This can be of type js, ts, mjs, cjs etc. You should adapt the file according to what extension it uses, and if it does not exist yet use '.js'.
 
-Add the ConnectButton to any page where you want users to connect their wallets:
-
-\`\`\`${ext}
-'use client'
-
-import { ConnectButton } from './components/ConnectButton'
-
-export default function Home() {
-  return (
-    <main>
-      <h1>WalletConnect Integration</h1>
-      <ConnectButton />
-    </main>
-  )
+Example:
+--------------------------------------------------
+const nextConfig = {
+  // other config
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "${getAssetHostFromHost(host)}/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "${host}/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "${host}/decide",
+      },
+    ];
+  },
+  // This is required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
 }
-\`\`\`
+module.exports = nextConfig
+--------------------------------------------------`;
+};
 
-Make sure your \`.env.local\` file contains your WalletConnect Project ID:
-
-\`\`\`
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
-\`\`\`
-`;
-}
-
-export function getNextjsPagesRouterDocs({
+export const getNextjsPagesRouterDocs = ({
+  host,
   language,
 }: {
+  host: string;
   language: 'typescript' | 'javascript';
-}): string {
-  const ext = language === 'typescript' ? 'tsx' : 'jsx';
-  
+}) => {
   return `
-# Next.js Pages Router WalletConnect Integration
+==============================
+FILE: _app.${language === 'typescript' ? 'tsx' : 'jsx'}
+LOCATION: Wherever the root _app.${language === 'typescript' ? 'tsx' : 'jsx'
+    } file is
+==============================
+Changes:
+- Initialize PostHog in _app.js.
+- Wrap the application in PostHogProvider.
+- Manually capture $pageview events.
 
-## Step 1: Create a Web3 Provider component
+Example:
+--------------------------------------------------
+import { useEffect } from "react"
+import { Router } from "next/router"
+import posthog from "posthog-js"
+import { PostHogProvider } from "posthog-js/react"
 
-Create a file at \`components/Web3Provider.${ext}\`:
-
-\`\`\`${ext}
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider, createConfig, http } from 'wagmi'
-import { mainnet, sepolia } from 'wagmi/chains'
-import { metaMask, walletConnect } from 'wagmi/connectors'
-import { ReactNode, useState } from 'react'
-
-// Get projectId from environment variable
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as string
-
-// Create wagmi config
-const config = createConfig({
-  chains: [mainnet, sepolia],
-  transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-  },
-  connectors: [
-    metaMask(),
-    walletConnect({
-      projectId,
-      metadata: {
-        name: 'Your App Name',
-        description: 'Your app description',
-        url: 'https://yourapp.com',
-        icons: ['https://yourapp.com/icon.png'],
+export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+      api_host: "/ingest",
+      ui_host: "${getUiHostFromHost(host)}",
+      loaded: (posthog) => {
+        if (process.env.NODE_ENV === "development") posthog.debug()
       },
-    }),
-  ],
-})
+    })
 
-export function Web3Provider({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+    const handleRouteChange = () => posthog?.capture("$pageview")
+    Router.events.on("routeChangeComplete", handleRouteChange)
+
+    return () => {
+      Router.events.off("routeChangeComplete", handleRouteChange)
+    }
+  }, [])
 
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </WagmiProvider>
-  )
-}
-\`\`\`
-
-## Step 2: Add the provider to your _app file
-
-Update your \`pages/_app.${ext}\` file:
-
-\`\`\`${ext}
-import { Web3Provider } from '../components/Web3Provider'
-import type { AppProps } from 'next/app'
-
-function MyApp({ Component, pageProps }: AppProps) {
-  return (
-    <Web3Provider>
+    <PostHogProvider client={posthog}>
       <Component {...pageProps} />
-    </Web3Provider>
+    </PostHogProvider>
   )
 }
+--------------------------------------------------
 
-export default MyApp
-\`\`\`
+==============================
+FILE: posthog.${language === 'typescript' ? 'ts' : 'js'}
+LOCATION: Wherever works best given the project structure
+==============================
+Changes:
+- Initialize the PostHog Node.js client
 
-## Step 3: Create a Connect Button component
+Example:
+--------------------------------------------------
+import { PostHog } from "posthog-node"
 
-Create a file at \`components/ConnectButton.${ext}\`:
-
-\`\`\`${ext}
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
-
-export function ConnectButton() {
-  const { connectors, connect, status: connectStatus, error: connectError } = useConnect()
-  const { disconnect, status: disconnectStatus } = useDisconnect()
-  const { isConnected, address } = useAccount()
-
-  if (isConnected) {
-    return (
-      <div>
-        <div>Connected to {address?.substring(0, 6)}...{address?.substring(address.length - 4)}</div>
-        <button 
-          onClick={() => disconnect()} 
-          disabled={disconnectStatus === 'pending'}
-        >
-          Disconnect
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      {connectors.map((connector) => (
-        <button
-          key={connector.uid}
-          onClick={() => connect({ connector })}
-          disabled={connectStatus === 'pending'}
-        >
-          Connect with {connector.name}
-          {connectStatus === 'pending' && ' (connecting...)'}
-        </button>
-      ))}
-      
-      {connectError && <div style={{ color: 'red' }}>{connectError.message}</div>}
-    </div>
-  )
+export default function PostHogClient() {
+  const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+    host: "${host}",
+    flushAt: 1,
+    flushInterval: 0,
+  })
+  return posthogClient
 }
-\`\`\`
+--------------------------------------------------
 
-## Step 4: Use the Connect Button in your pages
+==============================
+FILE: next.config.{js,ts,mjs,cjs}
+LOCATION: Wherever the root next config is
+==============================
+Changes:
+- Add rewrites to the Next.js config to support PostHog, if there are existing rewrites, add the PostHog rewrites to them.
+- Add skipTrailingSlashRedirect to the Next.js config to support PostHog trailing slash API requests.
+- This can be of type js, ts, mjs, cjs etc. You should adapt the file according to what extension it uses, and if it does not exist yet use '.js'.
 
-Add the ConnectButton to any page where you want users to connect their wallets:
-
-\`\`\`${ext}
-import { ConnectButton } from '../components/ConnectButton'
-
-export default function Home() {
-  return (
-    <main>
-      <h1>WalletConnect Integration</h1>
-      <ConnectButton />
-    </main>
-  )
+Example:
+--------------------------------------------------
+const nextConfig = {
+  // other config
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "${getAssetHostFromHost(host)}/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "${host}/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "${host}/decide",
+      },
+    ];
+  },
+  // This is required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
 }
-\`\`\`
-
-Make sure your \`.env.local\` file contains your WalletConnect Project ID:
-
-\`\`\`
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
-\`\`\`
-`;
-}
+module.exports = nextConfig
+--------------------------------------------------`;
+};
