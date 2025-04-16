@@ -35,7 +35,7 @@ export const IS_DEV = false;
 
 export const ISSUES_URL = 'https://github.com/HAPPYS1NGH/web3-wizard/issues';
 
-export const ANALYTICS_POSTHOG_PUBLIC_PROJECT_WRITE_KEY = 'sTMFPsFhdP1Ssg';
+export const ANALYTICS_POSTHOG_PUBLIC_PROJECT_WRITE_KEY = 'phc_jzetql2Bkv2WvV1LiVNHTNnFKNgB9VC6H6SE3pmu1oR';
 
 export const ANALYTICS_HOST_URL = IS_DEV
   ? 'http://localhost:8010'
