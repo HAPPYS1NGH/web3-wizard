@@ -166,8 +166,10 @@ export async function generateFileChangesForIntegration({
           path.join(installDir, filePath),
           'utf8',
         );
-      } catch (readError) {
-        if (readError.code !== 'ENOENT') {
+      } catch (readError: any) {
+        if (typeof readError === 'object' && readError !== null && 'code' in readError && readError.code === 'ENOENT') {
+          // File doesn't exist, which is fine for new files
+        } else {
           await abort(`Error reading file ${filePath}`);
           continue;
         }

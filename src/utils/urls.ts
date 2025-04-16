@@ -1,6 +1,5 @@
 // TODO: Remove this File
 import { IS_DEV } from '../lib/constants';
-import type { CloudRegion } from './types';
 
 export const getAssetHostFromHost = (host: string) => {
   if (host.includes('us.i.posthog.com')) {
@@ -24,15 +23,4 @@ export const getUiHostFromHost = (host: string) => {
   }
 
   return host;
-};
-
-export const getCloudUrlFromRegion = (region: CloudRegion) => {
-  if (IS_DEV) {
-    return 'http://localhost:8010';
-  }
-
-  if (region === 'us') {
-    return 'https://us.posthog.com';
-  }
-  return 'https://eu.posthog.com';
 };
