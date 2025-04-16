@@ -1,31 +1,28 @@
 import axios from 'axios';
 import type { ZodSchema } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import type { CloudRegion } from './types';
-import { getCloudUrlFromRegion } from './urls';
+import { WIZARD_PROXY_URL } from '../lib/constants';
 
 export const query = async <S>({
   message,
-  region,
   schema,
   wizardHash,
 }: {
   message: string;
-  region: CloudRegion;
   schema: ZodSchema<S>;
   wizardHash: string;
 }): Promise<S> => {
   const jsonSchema = zodToJsonSchema(schema, 'schema').definitions;
 
   const response = await axios.post<{ data: unknown }>(
-    `${getCloudUrlFromRegion(region)}/api/wizard/query`,
+    `${WIZARD_PROXY_URL}/api/wizard/query`,
     {
       message,
       json_schema: { ...jsonSchema, name: 'schema', strict: true },
     },
     {
       headers: {
-        'X-PostHog-Wizard-Hash': wizardHash,
+        'X-web3-Wizard-Hash': wizardHash,
       },
     },
   );

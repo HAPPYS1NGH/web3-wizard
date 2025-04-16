@@ -27,9 +27,9 @@ export type WizardOptions = {
   installDir: string;
 
   /**
-   * The cloud region to use.
+   * The wallet provider to use.
    */
-  cloudRegion?: CloudRegion;
+  walletProvider?: WalletProvider;
 
   /**
    * Whether to select the default option for all questions automatically.
@@ -50,4 +50,4 @@ export type FileChange = {
   newContent: string;
 };
 
-export type CloudRegion = 'us' | 'eu';
+export type WalletProvider = 'privy' 

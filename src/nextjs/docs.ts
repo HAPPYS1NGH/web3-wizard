@@ -1,74 +1,45 @@
 import { getAssetHostFromHost, getUiHostFromHost } from '../utils/urls';
 
 export const getNextjsAppRouterDocs = ({
-  host,
   language,
 }: {
-  host: string;
   language: 'typescript' | 'javascript';
 }) => {
   return `
 ==============================
-FILE: PostHogProvider.${language === 'typescript' ? 'tsx' : 'jsx'
-    } (put it somewhere where client files are, like the components folder)
-LOCATION: Wherever other providers are, or the components folder
+FILE: PrivyProvider.${language === 'typescript' ? 'tsx' : 'jsx'} (create this in your components directory)
+LOCATION: Wherever other providers are, or the components directory
 ==============================
 Changes:
-- Create a PostHogProvider component that will be imported into the layout file.
+- Create a PrivyProvider component that will wrap your application with Privy authentication.
+- Mark it with 'use client' directive since it uses client-side functionality.
 
 Example:
 --------------------------------------------------
-"use client"
+'use client';
 
-import posthog from "posthog-js"
-import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react"
-import { Suspense, useEffect } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+import { PrivyProvider as PrivyAuthProvider } from '@privy-io/react-auth';
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      api_host: "/ingest",
-      ui_host: "${getUiHostFromHost(host)}",
-      capture_pageview: false, // We capture pageviews manually
-      capture_pageleave: true, // Enable pageleave capture
-    })
-  }, [])
-
+export function PrivyProvider({ children }: { children: React.ReactNode }) {
   return (
-    <PHProvider client={posthog}>
-      <SuspendedPostHogPageView />
+    <PrivyAuthProvider
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      config={{
+        // Customize Privy's appearance in your app
+        appearance: {
+          theme: 'light',
+          accentColor: '#676FFF',
+          logo: 'https://your-logo-url'
+        },
+        // Create embedded wallets for users who don't have a wallet
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets'
+        }
+      }}
+    >
       {children}
-    </PHProvider>
-  )
-}
-
-
-function PostHogPageView() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const posthog = usePostHog()
-
-  useEffect(() => {
-    if (pathname && posthog) {
-      let url = window.origin + pathname
-      const search = searchParams.toString()
-      if (search) {
-        url += "?" + search
-      }
-      posthog.capture("$pageview", { "$current_url": url })
-    }
-  }, [pathname, searchParams, posthog])
-
-  return null
-}
-
-function SuspendedPostHogPageView() {
-  return (
-    <Suspense fallback={null}>
-      <PostHogPageView />
-    </Suspense>
-  )
+    </PrivyAuthProvider>
+  );
 }
 --------------------------------------------------
 
@@ -77,189 +48,74 @@ FILE: layout.${language === 'typescript' ? 'tsx' : 'jsx'}
 LOCATION: Wherever the root layout is
 ==============================
 Changes:
-- Import the PostHogProvider from the providers file and wrap the app in it.
+- Import the PrivyProvider and wrap your application in it.
+- This makes Privy available throughout your application.
 
 Example:
 --------------------------------------------------
 // other imports
-import { PostHogProvider } from "LOCATION_OF_POSTHOG_PROVIDER"
+import { PrivyProvider } from "@/components/PrivyProvider"
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <PostHogProvider>
-          {/* other providers */}
-          {children}
-          {/* other providers */}
-        </PostHogProvider>
+        {/* other providers */}
+          <PrivyProvider>
+            {children}
+          </PrivyProvider>
+        {/* other providers */}
       </body>
     </html>
   )
 }
---------------------------------------------------
-
-==============================
-FILE: posthog.${language === 'typescript' ? 'ts' : 'js'}
-LOCATION: Wherever works best given the project structure
-==============================
-Changes:
-- Initialize the PostHog Node.js client
-
-Example:
---------------------------------------------------
-import { PostHog } from "posthog-node"
-
-export default function PostHogClient() {
-  const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-    host: "${host}",
-    flushAt: 1,
-    flushInterval: 0,
-  })
-  return posthogClient
-}
---------------------------------------------------
-
-==============================
-FILE: next.config.{js,ts,mjs,cjs}
-LOCATION: Wherever the root next config is
-==============================
-Changes:
-- Add rewrites to the Next.js config to support PostHog, if there are existing rewrites, add the PostHog rewrites to them.
-- Add skipTrailingSlashRedirect to the Next.js config to support PostHog trailing slash API requests.
-- This can be of type js, ts, mjs, cjs etc. You should adapt the file according to what extension it uses, and if it does not exist yet use '.js'.
-
-Example:
---------------------------------------------------
-const nextConfig = {
-  // other config
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "${getAssetHostFromHost(host)}/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "${host}/:path*",
-      },
-      {
-        source: "/ingest/decide",
-        destination: "${host}/decide",
-      },
-    ];
-  },
-  // This is required to support PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
-}
-module.exports = nextConfig
 --------------------------------------------------`;
 };
 
 export const getNextjsPagesRouterDocs = ({
-  host,
   language,
 }: {
-  host: string;
   language: 'typescript' | 'javascript';
 }) => {
   return `
 ==============================
 FILE: _app.${language === 'typescript' ? 'tsx' : 'jsx'}
-LOCATION: Wherever the root _app.${language === 'typescript' ? 'tsx' : 'jsx'
-    } file is
+LOCATION: Wherever the root _app.${language === 'typescript' ? 'tsx' : 'jsx'} file is
 ==============================
 Changes:
-- Initialize PostHog in _app.js.
-- Wrap the application in PostHogProvider.
-- Manually capture $pageview events.
+- Initialize Privy in your _app file
+- Wrap the application in PrivyProvider
+- Note the use of 'NEXT_PUBLIC_PRIVY_APP_ID' environment variable
 
 Example:
 --------------------------------------------------
-import { useEffect } from "react"
-import { Router } from "next/router"
-import posthog from "posthog-js"
-import { PostHogProvider } from "posthog-js/react"
+import { PrivyProvider } from '@privy-io/react-auth';
+import type { AppProps } from 'next/app';
 
-export default function App({ Component, pageProps }) {
-  useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: "/ingest",
-      ui_host: "${getUiHostFromHost(host)}",
-      loaded: (posthog) => {
-        if (process.env.NODE_ENV === "development") posthog.debug()
-      },
-    })
-
-    const handleRouteChange = () => posthog?.capture("$pageview")
-    Router.events.on("routeChangeComplete", handleRouteChange)
-
-    return () => {
-      Router.events.off("routeChangeComplete", handleRouteChange)
-    }
-  }, [])
-
+function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <PostHogProvider client={posthog}>
+    <PrivyProvider
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      config={{
+        appearance: {
+          theme: 'light',
+          accentColor: '#676FFF',
+          // You can customize this with your own logo
+          logo: 'https://your-logo-url'
+        },
+        // Create embedded wallets for users who don't have a wallet
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets'
+        }
+      }}
+    >
       <Component {...pageProps} />
-    </PostHogProvider>
-  )
+    </PrivyProvider>
+  );
 }
+
+export default MyApp;
+
 --------------------------------------------------
-
-==============================
-FILE: posthog.${language === 'typescript' ? 'ts' : 'js'}
-LOCATION: Wherever works best given the project structure
-==============================
-Changes:
-- Initialize the PostHog Node.js client
-
-Example:
---------------------------------------------------
-import { PostHog } from "posthog-node"
-
-export default function PostHogClient() {
-  const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-    host: "${host}",
-    flushAt: 1,
-    flushInterval: 0,
-  })
-  return posthogClient
-}
---------------------------------------------------
-
-==============================
-FILE: next.config.{js,ts,mjs,cjs}
-LOCATION: Wherever the root next config is
-==============================
-Changes:
-- Add rewrites to the Next.js config to support PostHog, if there are existing rewrites, add the PostHog rewrites to them.
-- Add skipTrailingSlashRedirect to the Next.js config to support PostHog trailing slash API requests.
-- This can be of type js, ts, mjs, cjs etc. You should adapt the file according to what extension it uses, and if it does not exist yet use '.js'.
-
-Example:
---------------------------------------------------
-const nextConfig = {
-  // other config
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "${getAssetHostFromHost(host)}/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "${host}/:path*",
-      },
-      {
-        source: "/ingest/decide",
-        destination: "${host}/decide",
-      },
-    ];
-  },
-  // This is required to support PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
-}
-module.exports = nextConfig
---------------------------------------------------`;
+`
 };

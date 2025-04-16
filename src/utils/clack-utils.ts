@@ -16,7 +16,7 @@ import {
   packageManagers,
 } from './package-manager';
 import { fulfillsVersionRange } from './semver';
-import type { CloudRegion, Feature, WizardOptions } from './types';
+import type { Feature, WizardOptions } from './types';
 import {
   DUMMY_PROJECT_API_KEY,
   ISSUES_URL,
@@ -24,8 +24,7 @@ import {
 } from '../lib/constants';
 import { analytics } from './analytics';
 import clack from './clack';
-import { getCloudUrlFromRegion } from './urls';
-
+import { WIZARD_PROXY_URL } from '../lib/constants';
 interface ProjectData {
   projectApiKey: string;
   host: string;
@@ -85,7 +84,7 @@ export function printWelcome(options: {
 
   const welcomeText =
     options.message ||
-    `The ${options.wizardName} will help you set up PostHog for your application.\nThank you for using PostHog :)`;
+    `The ${options.wizardName} will help you set up Web3 Wallet Connection for your application.\nThank you for using Web3 Wizard :)`;
 
   clack.note(welcomeText);
 }
@@ -224,7 +223,7 @@ export async function confirmContinueIfPackageVersionNotSupported({
 
     clack.note(
       note ??
-      `Please upgrade to ${acceptableVersions} if you wish to use the PostHog Wizard.`,
+      `Please upgrade to ${acceptableVersions} if you wish to use the Web3 Wallet Wizard.`,
     );
     const continueWithUnsupportedVersion = await abortIfCancelled(
       clack.confirm({
@@ -258,7 +257,7 @@ export async function installPackage({
   integration,
   installDir,
 }: {
-  /** The string that is passed to the package manager CLI as identifier to install (e.g. `posthog-js`, or `posthog-js@^1.100.0`) */
+  /** The string that is passed to the package manager CLI as identifier to install (e.g. `@privy-io/react-auth`, or `@privy-io/react-auth@latest`) */
   packageName: string;
   alreadyInstalled: boolean;
   askBeforeUpdating?: boolean;
@@ -310,7 +309,7 @@ export async function installPackage({
               fs.writeFileSync(
                 join(
                   process.cwd(),
-                  `posthog-wizard-installation-error-${Date.now()}.log`,
+                  `web3-wallet-wizard-installation-error-${Date.now()}.log`,
                 ),
                 JSON.stringify({
                   stdout,
@@ -333,7 +332,7 @@ export async function installPackage({
           'Encountered the following error during installation:',
           // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         )}\n\n${e}\n\n${chalk.dim(
-          `The wizard has created a \`posthog-wizard-installation-error-*.log\` file. If you think this issue is caused by the PostHog Wizard, create an issue on GitHub and include the log file's content:\n${ISSUES_URL}`,
+          `The wizard has created a \`web3-wallet-wizard-installation-error-*.log\` file. If you think this issue is caused by the Web3 Wallet Wizard, create an issue on GitHub and include the log file's content:\n${ISSUES_URL}`,
         )}`,
       );
       await abort();
@@ -554,32 +553,25 @@ export function isUsingTypeScript({
  */
 export async function getOrAskForProjectData(
   _options: WizardOptions & {
-    cloudRegion: CloudRegion;
   },
 ): Promise<{
   wizardHash: string;
   host: string;
   projectApiKey: string;
 }> {
-  const cloudUrl = getCloudUrlFromRegion(_options.cloudRegion);
   const { host, projectApiKey, wizardHash } = await traceStep('login', () =>
     askForWizardLogin({
-      url: cloudUrl,
+      url: WIZARD_PROXY_URL,
     }),
   );
 
   if (!projectApiKey) {
-    clack.log.error(`Didn't receive a project API key. This shouldn't happen :(
-
-Please let us know if you think this is a bug in the wizard:
-${chalk.cyan(ISSUES_URL)}`);
-
     clack.log
-      .info(`In the meantime, we'll add a dummy project API key (${chalk.cyan(
+      .info(`we'll add a dummy project API key (${chalk.cyan(
         `"${DUMMY_PROJECT_API_KEY}"`,
       )}) for you to replace later.
 You can find your Project API key here:
-${chalk.cyan(`${cloudUrl}/settings/project#variables`)}`);
+${chalk.cyan(`https://dashboard.privy.io/`)}`);
   }
 
   return {
@@ -596,7 +588,7 @@ async function askForWizardLogin(options: {
 
   try {
     wizardHash = (
-      await axios.post<{ hash: string }>(`${options.url}/api/wizard/initialize`)
+      await axios.post<{ hash: string }>(`${WIZARD_PROXY_URL}/api/wizard/initialize`)
     ).data.hash;
   } catch (e: unknown) {
     clack.log.error('Loading wizard failed.');
@@ -608,13 +600,13 @@ async function askForWizardLogin(options: {
     );
   }
 
-  const loginUrl = new URL(`${options.url}/wizard?hash=${wizardHash!}`);
+  const loginUrl = new URL(`${WIZARD_PROXY_URL}/wizard?hash=${wizardHash!}`);
 
   const urlToOpen = loginUrl.toString();
 
   clack.log.info(
     `${chalk.bold(
-      `If the browser window didn't open automatically, please open the following link to login into PostHog:`,
+      `If the browser window didn't open automatically, please open the following link to login into Privy:`,
     )}\n\n${chalk.cyan(urlToOpen)}`,
   );
 
@@ -633,10 +625,10 @@ async function askForWizardLogin(options: {
           project_api_key: string;
           host: string;
           user_distinct_id: string;
-        }>(`${options.url}/api/wizard/data`, {
+        }>(`${WIZARD_PROXY_URL}/api/wizard/data`, {
           headers: {
             'Accept-Encoding': 'deflate',
-            'X-PostHog-Wizard-Hash': wizardHash,
+            'X-web3-Wizard-Hash': wizardHash,
           },
         })
         .then((result) => {
@@ -927,12 +919,12 @@ export async function askForAIConsent(options: Pick<WizardOptions, 'default'>) {
       ? true
       : await abortIfCancelled(
         clack.select({
-          message: 'Use AI to setup PostHog automatically? ✨',
+          message: 'Use AI to setup Privy automatically? ✨',
           options: [
             {
               label: 'Yes',
               value: true,
-              hint: 'We will use AI to help you setup PostHog quickly',
+              hint: 'We will use AI to help you setup Privy quickly',
             },
             {
               label: 'No',
@@ -945,27 +937,5 @@ export async function askForAIConsent(options: Pick<WizardOptions, 'default'>) {
       );
 
     return aiConsent as boolean;
-  });
-}
-
-export async function askForCloudRegion(): Promise<CloudRegion> {
-  return await traceStep('ask-for-cloud-region', async () => {
-    const result = await abortIfCancelled(
-      clack.select({
-        message: 'Select your cloud region',
-        options: [
-          {
-            label: 'US 🇺🇸',
-            value: 'us',
-          },
-          {
-            label: 'EU 🇪🇺',
-            value: 'eu',
-          },
-        ],
-      }),
-    );
-
-    return result as CloudRegion;
   });
 }

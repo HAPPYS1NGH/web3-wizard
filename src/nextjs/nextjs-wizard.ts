@@ -32,7 +32,6 @@ import {
   getRelevantFilesForIntegration,
 } from '../utils/file-utils';
 import type { WizardOptions } from '../utils/types';
-import { askForCloudRegion } from '../utils/clack-utils';
 
 export async function runNextjsWizard(options: WizardOptions): Promise<void> {
   printWelcome({
@@ -43,12 +42,10 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
 
   if (!aiConsent) {
     await abort(
-      'The Next.js wizard requires AI to get setup right now. Please view the docs to setup Next.js manually instead: https://posthog.com/docs/libraries/next-js',
+      'The Next.js wizard requires AI to get setup right now. Please view the docs to setup Next.js manually instead: https://docs.privy.io/basics/react/setup',
       0,
     );
   }
-
-  const cloudRegion = options.cloudRegion ?? (await askForCloudRegion());
 
   const typeScriptDetected = isUsingTypeScript(options);
 
@@ -64,18 +61,17 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
 
   const { projectApiKey, wizardHash, host } = await getOrAskForProjectData({
     ...options,
-    cloudRegion,
   });
 
-  const sdkAlreadyInstalled = hasPackageInstalled('posthog-js', packageJson);
+  const sdkAlreadyInstalled = hasPackageInstalled('@privy-io/react-auth', packageJson);
 
   analytics.setTag('sdk-already-installed', sdkAlreadyInstalled);
 
   const { packageManager: packageManagerFromInstallStep } =
     await installPackage({
-      packageName: 'posthog-js',
-      packageNameDisplayLabel: 'posthog-js',
-      alreadyInstalled: !!packageJson?.dependencies?.['posthog-js'],
+      packageName: '@privy-io/react-auth',
+      packageNameDisplayLabel: '@privy-io/react-auth',
+      alreadyInstalled: !!packageJson?.dependencies?.['@privy-io/react-auth'],
       forceInstall: options.forceInstall,
       askBeforeUpdating: false,
       installDir: options.installDir,
@@ -83,10 +79,10 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
     });
 
   await installPackage({
-    packageName: 'posthog-node',
-    packageNameDisplayLabel: 'posthog-node',
+    packageName: '@privy-io/react-auth',
+    packageNameDisplayLabel: '@privy-io/react-auth',
     packageManager: packageManagerFromInstallStep,
-    alreadyInstalled: !!packageJson?.dependencies?.['posthog-node'],
+    alreadyInstalled: !!packageJson?.dependencies?.['@privy-io/react-auth'],
     forceInstall: options.forceInstall,
     askBeforeUpdating: false,
     installDir: options.installDir,
@@ -107,7 +103,7 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
   });
 
   clack.log.info(
-    `Reviewing PostHog documentation for ${getNextJsRouterName(router)}`,
+    `Reviewing Privy documentation for ${getNextJsRouterName(router)}`,
   );
 
   const filesToChange = await getFilesToChange({
@@ -115,7 +111,6 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
     relevantFiles,
     documentation: installationDocumentation,
     wizardHash,
-    cloudRegion,
   });
 
   await generateFileChangesForIntegration({
@@ -124,12 +119,11 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
     wizardHash,
     installDir: options.installDir,
     documentation: installationDocumentation,
-    cloudRegion,
   });
 
   await addOrUpdateEnvironmentVariables({
     variables: {
-      NEXT_PUBLIC_POSTHOG_KEY: projectApiKey,
+      NEXT_PUBLIC_PRIVY_APP_ID: projectApiKey,
     },
     installDir: options.installDir,
     integration: Integration.nextjs,
@@ -144,7 +138,7 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
   });
 
   clack.outro(`
-${chalk.green('Successfully installed PostHog!')} ${`\n\n${aiConsent
+${chalk.green('Successfully installed Privy!')} ${`\n\n${aiConsent
       ? `Note: This uses experimental AI to setup your project. It might have got it wrong, please check!\n`
       : ``
     }You should validate your setup by (re)starting your dev environment (e.g. ${chalk.cyan(
@@ -166,8 +160,8 @@ function getInstallationDocumentation({
   language: 'typescript' | 'javascript';
 }) {
   if (router === NextJsRouter.PAGES_ROUTER) {
-    return getNextjsPagesRouterDocs({ host, language });
+    return getNextjsPagesRouterDocs({ language });
   }
 
-  return getNextjsAppRouterDocs({ host, language });
+  return getNextjsAppRouterDocs({ language });
 }
