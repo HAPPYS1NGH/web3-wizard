@@ -559,11 +559,12 @@ export async function getOrAskForProjectData(
   host: string;
   projectApiKey: string;
 }> {
-  const { host, projectApiKey, wizardHash } = await traceStep('login', () =>
-    askForWizardLogin({
-      url: WIZARD_PROXY_URL,
-    }),
+  console.log('getOrAskForProjectData');
+  console.log('WizardOptions', _options);
+  const { host, projectApiKey, wizardHash } = await traceStep('login', async () =>
+    await askForWizardLogin(),
   );
+
 
   if (!projectApiKey) {
     clack.log
@@ -581,9 +582,7 @@ ${chalk.cyan(`https://dashboard.privy.io/`)}`);
   };
 }
 
-async function askForWizardLogin(options: {
-  url: string;
-}): Promise<ProjectData> {
+async function askForWizardLogin(): Promise<ProjectData> {
   let wizardHash: string;
 
   try {

@@ -31,12 +31,12 @@ export function getNextJsVersionBucket(version: string | undefined): string {
     return 'old';
   }
 }
-
 export async function getNextJsRouter(
   options: { installDir: string }
 ): Promise<NextJsRouter> {
-  const hasAppDir = existsSync(path.join(options.installDir, 'app'));
-  const hasPagesDir = existsSync(path.join(options.installDir, 'pages'));
+  console.log('options.installDir', options.installDir);
+  const hasAppDir = existsSync(path.join(options.installDir, 'app')) || existsSync(path.join(options.installDir, 'src', 'app'));
+  const hasPagesDir = existsSync(path.join(options.installDir, 'pages')) || existsSync(path.join(options.installDir, 'src', 'pages'));
 
   if (hasAppDir && !hasPagesDir) {
     return NextJsRouter.APP_ROUTER;
@@ -45,7 +45,6 @@ export async function getNextJsRouter(
   }
 
   if (hasAppDir && hasPagesDir) {
-    // Both app and pages directories exist, ask the user which one they're primarily using
     return await clack.select({
       message: 'Which Next.js router are you primarily using?',
       options: [
@@ -55,7 +54,6 @@ export async function getNextJsRouter(
     });
   }
 
-  // Neither directory exists, default to app router
   clack.log.info(
     'Could not automatically detect your Next.js router. Defaulting to App Router.'
   );

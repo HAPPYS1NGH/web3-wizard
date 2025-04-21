@@ -6,19 +6,20 @@ import { WIZARD_PROXY_URL } from '../lib/constants';
 export const query = async <S>({
   message,
   schema,
+  type,
   wizardHash,
 }: {
   message: string;
   schema: ZodSchema<S>;
+  type: 'filter' | 'generate';
   wizardHash: string;
 }): Promise<S> => {
-  const jsonSchema = zodToJsonSchema(schema, 'schema').definitions;
-
   const response = await axios.post<{ data: unknown }>(
     `${WIZARD_PROXY_URL}/api/wizard/query`,
     {
       message,
-      json_schema: { ...jsonSchema, name: 'schema', strict: true },
+      json_schema: schema,
+      type,
     },
     {
       headers: {

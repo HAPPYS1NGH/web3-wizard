@@ -101,6 +101,7 @@ export async function getFilesToChange({
   const filterFilesResponse = await query({
     message: prompt,
     schema: filterFilesResponseSchmea,
+    type: 'filter',
     wizardHash,
   });
 
@@ -126,6 +127,7 @@ export async function generateFileContent({
 }) {
   const response = await query({
     message: prompt,
+    type: 'generate',
     schema: z.object({
       newContent: z.string(),
     }),
