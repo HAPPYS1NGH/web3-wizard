@@ -59,7 +59,7 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
 
   analytics.setTag('nextjs-version', getNextJsVersionBucket(nextVersion));
 
-  const { projectApiKey, wizardHash, host } = await getOrAskForProjectData({
+  const { projectApiKey, wizardHash } = await getOrAskForProjectData({
     ...options,
   });
 
@@ -98,7 +98,6 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
 
   const installationDocumentation = getInstallationDocumentation({
     router,
-    host,
     language: typeScriptDetected ? 'typescript' : 'javascript',
   });
 
@@ -152,11 +151,9 @@ ${chalk.dim(`If you encounter any issues, let us know here: ${ISSUES_URL}`)}`);
 
 function getInstallationDocumentation({
   router,
-  host,
   language,
 }: {
   router: NextJsRouter;
-  host: string;
   language: 'typescript' | 'javascript';
 }) {
   if (router === NextJsRouter.PAGES_ROUTER) {
