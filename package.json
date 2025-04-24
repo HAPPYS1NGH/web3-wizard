@@ -2,8 +2,11 @@
   "name": "web3-wizard",
   "version": "1.0.0",
   "homepage": "https://github.com/HAPPYS1NGH/web3-wizard",
-  "repository": "https://github.com/HAPPYS1NGH/web3-wizard",
-  "description": "The Web3 wizard helps you to configure Privy Wallet in your project",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HAPPYS1NGH/web3-wizard.git"
+  },
+  "description": "The Web3 wizard helps you to configure Privy Authentication and WalletConnect in your project",
   "keywords": [
     "web3",
     "wizard",
