@@ -1,10 +1,10 @@
 export function getReownNextjsDocs({
   language,
 }: {
-  language: 'typescript' | 'javascript';
+  language: "typescript" | "javascript";
 }): string {
-  const ext = language === 'typescript' ? 'tsx' : 'jsx';
-  
+  const ext = language === "typescript" ? "tsx" : "jsx";
+
   return `
 # Reown App Kit with Next.js Integration
 

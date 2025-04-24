@@ -1,4 +1,4 @@
-import { satisfies, subset, valid, validRange } from 'semver';
+import { satisfies, subset, valid, validRange } from "semver";
 
 export function fulfillsVersionRange({
   version,
@@ -9,7 +9,7 @@ export function fulfillsVersionRange({
   acceptableVersions: string;
   canBeLatest: boolean;
 }): boolean {
-  if (version === 'latest') {
+  if (version === "latest") {
     return canBeLatest;
   }
 

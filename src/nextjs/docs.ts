@@ -1,13 +1,15 @@
-import { getAssetHostFromHost, getUiHostFromHost } from '../utils/urls';
+import { getAssetHostFromHost, getUiHostFromHost } from "../utils/urls";
 
 export const getNextjsAppRouterDocs = ({
   language,
 }: {
-  language: 'typescript' | 'javascript';
+  language: "typescript" | "javascript";
 }) => {
   return `
 ==============================
-FILE: PrivyProvider.${language === 'typescript' ? 'tsx' : 'jsx'} (create this in your components directory)
+FILE: PrivyProvider.${
+    language === "typescript" ? "tsx" : "jsx"
+  } (create this in your components directory)
 LOCATION: Wherever other providers are, or the components directory
 ==============================
 Changes:
@@ -44,7 +46,7 @@ export function PrivyProvider({ children }: { children: React.ReactNode }) {
 --------------------------------------------------
 
 ==============================
-FILE: layout.${language === 'typescript' ? 'tsx' : 'jsx'}
+FILE: layout.${language === "typescript" ? "tsx" : "jsx"}
 LOCATION: Wherever the root layout is
 ==============================
 Changes:
@@ -75,12 +77,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 export const getNextjsPagesRouterDocs = ({
   language,
 }: {
-  language: 'typescript' | 'javascript';
+  language: "typescript" | "javascript";
 }) => {
   return `
 ==============================
-FILE: _app.${language === 'typescript' ? 'tsx' : 'jsx'}
-LOCATION: Wherever the root _app.${language === 'typescript' ? 'tsx' : 'jsx'} file is
+FILE: _app.${language === "typescript" ? "tsx" : "jsx"}
+LOCATION: Wherever the root _app.${
+    language === "typescript" ? "tsx" : "jsx"
+  } file is
 ==============================
 Changes:
 - Initialize Privy in your _app file
@@ -117,5 +121,5 @@ function MyApp({ Component, pageProps }: AppProps) {
 export default MyApp;
 
 --------------------------------------------------
-`
+`;
 };

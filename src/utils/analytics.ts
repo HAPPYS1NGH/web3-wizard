@@ -1,9 +1,9 @@
-import { PostHog } from 'posthog-node';
+import { PostHog } from "posthog-node";
 import {
   ANALYTICS_HOST_URL,
   ANALYTICS_POSTHOG_PUBLIC_PROJECT_WRITE_KEY,
-} from '../lib/constants';
-import { v4 as uuidv4 } from 'uuid';
+} from "../lib/constants";
+import { v4 as uuidv4 } from "uuid";
 export class Analytics {
   private client: PostHog;
   private tags: Record<string, string | boolean | number | null | undefined> =
@@ -48,14 +48,14 @@ export class Analytics {
     });
   }
 
-  async shutdown(status: 'success' | 'error' | 'cancelled') {
+  async shutdown(status: "success" | "error" | "cancelled") {
     if (Object.keys(this.tags).length === 0) {
       return;
     }
 
     this.client.capture({
       distinctId: this.distinctId ?? this.anonymousId,
-      event: 'setup wizard finished',
+      event: "setup wizard finished",
       properties: {
         status,
         tags: this.tags,

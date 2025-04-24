@@ -23,7 +23,7 @@ type NpmPackage = {
  */
 export function findInstalledPackageFromList(
   packageNamesList: string[],
-  packageJson: PackageDotJson,
+  packageJson: PackageDotJson
 ): NpmPackage | undefined {
   return packageNamesList
     .map((packageName) => ({
@@ -35,14 +35,14 @@ export function findInstalledPackageFromList(
 
 export function hasPackageInstalled(
   packageName: string,
-  packageJson: PackageDotJson,
+  packageJson: PackageDotJson
 ): boolean {
   return getPackageVersion(packageName, packageJson) !== undefined;
 }
 
 export function getPackageVersion(
   packageName: string,
-  packageJson: PackageDotJson,
+  packageJson: PackageDotJson
 ): string | undefined {
   return (
     packageJson?.dependencies?.[packageName] ||

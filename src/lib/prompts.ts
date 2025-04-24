@@ -1,11 +1,11 @@
-import { PromptTemplate } from '@langchain/core/prompts';
+import { PromptTemplate } from "@langchain/core/prompts";
 
 export const baseFilterFilesPromptTemplate = new PromptTemplate({
   inputVariables: [
-    'documentation',
-    'file_list',
-    'integration_name',
-    'integration_rules',
+    "documentation",
+    "file_list",
+    "integration_name",
+    "integration_rules",
   ],
   template: `You are a Web3 Wallet Wizard, a master AI programming assistant that implements Privy Authentication for {integration_name} projects.
 Given the following list of file paths from a project, determine which files are likely to require modifications 
@@ -35,13 +35,13 @@ All current files in the repository:
 
 export const baseGenerateFileChangesPromptTemplate = new PromptTemplate({
   inputVariables: [
-    'file_content',
-    'documentation',
-    'file_path',
-    'changed_files',
-    'unchanged_files',
-    'integration_name',
-    'integration_rules',
+    "file_content",
+    "documentation",
+    "file_path",
+    "changed_files",
+    "unchanged_files",
+    "integration_name",
+    "integration_rules",
   ],
   template: `You are a Web3 Wallet Wizard, a master AI programming assistant that implements Privy Authentication for {integration_name} projects.
 

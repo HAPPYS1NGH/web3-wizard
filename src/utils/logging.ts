@@ -1,13 +1,13 @@
-import Chalk from 'chalk';
+import Chalk from "chalk";
 
 export function prepareMessage(msg: unknown): string {
-  if (typeof msg === 'string') {
+  if (typeof msg === "string") {
     return msg;
   }
   if (msg instanceof Error) {
-    return `${msg.stack || ''}`;
+    return `${msg.stack || ""}`;
   }
-  return JSON.stringify(msg, null, '\t');
+  return JSON.stringify(msg, null, "\t");
 }
 
 export function l(msg: string): void {
@@ -16,7 +16,7 @@ export function l(msg: string): void {
 }
 
 export function nl(): void {
-  return l('');
+  return l("");
 }
 
 export function green(msg: string): void {

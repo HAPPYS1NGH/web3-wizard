@@ -2,10 +2,6 @@
 
 Thank you for considering contributing to Web3 Wizard! This document outlines the process for contributing to this project.
 
-## Code of Conduct
-
-By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
-
 ## How Can I Contribute?
 
 ### Reporting Bugs
@@ -24,11 +20,11 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 ### Pull Requests
 
 1. Fork the repository
-2. Create a new branch (`git checkout -b feature/amazing-feature`)
+2. Create a new branch (`git checkout -b feat/amazing-feature`)
 3. Make your changes
 4. Run tests and linting to ensure code quality (`pnpm test`, `pnpm lint`)
 5. Commit your changes using conventional commit messages
-6. Push to your branch (`git push origin feature/amazing-feature`)
+6. Push to your branch (`git push origin feat/amazing-feature`)
 7. Open a Pull Request
 
 ## Development Setup

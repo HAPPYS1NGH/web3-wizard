@@ -1,30 +1,30 @@
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import { basename, isAbsolute, join, relative } from 'node:path';
-import { setInterval } from 'node:timers';
-import { URL } from 'node:url';
-import axios from 'axios';
-import chalk from 'chalk';
-import opn from 'opn';
-import { traceStep } from '../telemetry';
-import { debug } from './debug';
-import { type PackageDotJson, hasPackageInstalled } from './package-json';
+import * as childProcess from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import { basename, isAbsolute, join, relative } from "node:path";
+import { setInterval } from "node:timers";
+import { URL } from "node:url";
+import axios from "axios";
+import chalk from "chalk";
+import opn from "opn";
+import { traceStep } from "../telemetry";
+import { debug } from "./debug";
+import { type PackageDotJson, hasPackageInstalled } from "./package-json";
 import {
   type PackageManager,
   detectPackageManger,
   packageManagers,
-} from './package-manager';
-import { fulfillsVersionRange } from './semver';
-import type { Feature, WizardOptions } from './types';
+} from "./package-manager";
+import { fulfillsVersionRange } from "./semver";
+import type { Feature, WizardOptions } from "./types";
 import {
   DUMMY_PROJECT_API_KEY,
   ISSUES_URL,
   type Integration,
-} from '../lib/constants';
-import { analytics } from './analytics';
-import clack from './clack';
-import { WIZARD_PROXY_URL } from '../lib/constants';
+} from "../lib/constants";
+import { analytics } from "./analytics";
+import clack from "./clack";
+import { WIZARD_PROXY_URL } from "../lib/constants";
 interface ProjectData {
   projectApiKey: string;
   host: string;
@@ -55,19 +55,19 @@ export interface CliSetupConfigContent {
 }
 
 export async function abort(message?: string, status?: number): Promise<never> {
-  await analytics.shutdown('cancelled');
+  await analytics.shutdown("cancelled");
 
-  clack.outro(message ?? 'Wizard setup cancelled.');
+  clack.outro(message ?? "Wizard setup cancelled.");
   return process.exit(status ?? 1);
 }
 
 export async function abortIfCancelled<T>(
-  input: T | Promise<T>,
+  input: T | Promise<T>
 ): Promise<Exclude<T, symbol>> {
-  await analytics.shutdown('cancelled');
+  await analytics.shutdown("cancelled");
 
   if (clack.isCancel(await input)) {
-    clack.cancel('Wizard setup cancelled.');
+    clack.cancel("Wizard setup cancelled.");
     process.exit(0);
   } else {
     return input as Exclude<T, symbol>;
@@ -79,7 +79,7 @@ export function printWelcome(options: {
   message?: string;
 }): void {
   // eslint-disable-next-line no-console
-  console.log('');
+  console.log("");
   clack.intro(chalk.inverse(` ${options.wizardName} `));
 
   const welcomeText =
@@ -90,20 +90,20 @@ export function printWelcome(options: {
 }
 
 export async function confirmContinueIfNoOrDirtyGitRepo(
-  options: Pick<WizardOptions, 'default'>,
+  options: Pick<WizardOptions, "default">
 ): Promise<void> {
-  return traceStep('check-git-status', async () => {
+  return traceStep("check-git-status", async () => {
     if (!isInGitRepo()) {
       const continueWithoutGit = options.default
         ? true
         : await abortIfCancelled(
-          clack.confirm({
-            message:
-              'You are not inside a git repository. The wizard will create and update files. Do you want to continue anyway?',
-          }),
-        );
+            clack.confirm({
+              message:
+                "You are not inside a git repository. The wizard will create and update files. Do you want to continue anyway?",
+            })
+          );
 
-      analytics.setTag('continue-without-git', continueWithoutGit);
+      analytics.setTag("continue-without-git", continueWithoutGit);
 
       if (!continueWithoutGit) {
         await abort(undefined, 0);
@@ -117,19 +117,19 @@ export async function confirmContinueIfNoOrDirtyGitRepo(
       clack.log.warn(
         `You have uncommitted or untracked files in your repo:
 
-${uncommittedOrUntrackedFiles.join('\n')}
+${uncommittedOrUntrackedFiles.join("\n")}
 
-The wizard will create and update files.`,
+The wizard will create and update files.`
       );
       const continueWithDirtyRepo = options.default
         ? true
         : await abortIfCancelled(
-          clack.confirm({
-            message: 'Do you want to continue anyway?',
-          }),
-        );
+            clack.confirm({
+              message: "Do you want to continue anyway?",
+            })
+          );
 
-      analytics.setTag('continue-with-dirty-repo', continueWithDirtyRepo);
+      analytics.setTag("continue-with-dirty-repo", continueWithDirtyRepo);
 
       if (!continueWithDirtyRepo) {
         await abort(undefined, 0);
@@ -140,8 +140,8 @@ The wizard will create and update files.`,
 
 export function isInGitRepo() {
   try {
-    childProcess.execSync('git rev-parse --is-inside-work-tree', {
-      stdio: 'ignore',
+    childProcess.execSync("git rev-parse --is-inside-work-tree", {
+      stdio: "ignore",
     });
     return true;
   } catch {
@@ -152,9 +152,9 @@ export function isInGitRepo() {
 export function getUncommittedOrUntrackedFiles(): string[] {
   try {
     const gitStatus = childProcess
-      .execSync('git status --porcelain=v1', {
+      .execSync("git status --porcelain=v1", {
         // we only care about stdout
-        stdio: ['ignore', 'pipe', 'ignore'],
+        stdio: ["ignore", "pipe", "ignore"],
       })
       .toString();
 
@@ -172,7 +172,7 @@ export function getUncommittedOrUntrackedFiles(): string[] {
 
 export async function askForItemSelection(
   items: string[],
-  message: string,
+  message: string
 ): Promise<{ value: string; index: number }> {
   const result = await abortIfCancelled(
     clack.select({
@@ -182,7 +182,7 @@ export async function askForItemSelection(
         value: { value: item, index: index },
         label: item,
       })),
-    }),
+    })
   );
 
   // Ensure we're returning the correct type
@@ -218,21 +218,21 @@ export async function confirmContinueIfPackageVersionNotSupported({
     clack.log.warn(
       `You have an unsupported version of ${packageName} installed:
 
-  ${packageId}@${packageVersion}`,
+  ${packageId}@${packageVersion}`
     );
 
     clack.note(
       note ??
-      `Please upgrade to ${acceptableVersions} if you wish to use the Web3 Wallet Wizard.`,
+        `Please upgrade to ${acceptableVersions} if you wish to use the Web3 Wallet Wizard.`
     );
     const continueWithUnsupportedVersion = await abortIfCancelled(
       clack.confirm({
-        message: 'Do you want to continue anyway?',
-      }),
+        message: "Do you want to continue anyway?",
+      })
     );
     analytics.setTag(
       `${packageName.toLowerCase()}-continue-with-unsupported-version`,
-      continueWithUnsupportedVersion,
+      continueWithUnsupportedVersion
     );
 
     if (!continueWithUnsupportedVersion) {
@@ -271,14 +271,14 @@ export async function installPackage({
   /** The directory to install the package in */
   installDir: string;
 }): Promise<{ packageManager?: PackageManager }> {
-  return traceStep('install-package', async () => {
+  return traceStep("install-package", async () => {
     if (alreadyInstalled && askBeforeUpdating) {
       const shouldUpdatePackage = await abortIfCancelled(
         clack.confirm({
           message: `The ${chalk.bold.cyan(
-            packageNameDisplayLabel ?? packageName,
+            packageNameDisplayLabel ?? packageName
           )} package is already installed. Do you want to update it to the latest version?`,
-        }),
+        })
       );
 
       if (!shouldUpdatePackage) {
@@ -292,15 +292,16 @@ export async function installPackage({
       packageManager || (await getPackageManager({ installDir }));
 
     sdkInstallSpinner.start(
-      `${alreadyInstalled ? 'Updating' : 'Installing'} ${chalk.bold.cyan(
-        packageNameDisplayLabel ?? packageName,
-      )} with ${chalk.bold(pkgManager.label)}.`,
+      `${alreadyInstalled ? "Updating" : "Installing"} ${chalk.bold.cyan(
+        packageNameDisplayLabel ?? packageName
+      )} with ${chalk.bold(pkgManager.label)}.`
     );
 
     try {
       await new Promise<void>((resolve, reject) => {
         childProcess.exec(
-          `${pkgManager.installCommand} ${packageName} ${pkgManager.flags} ${forceInstall ? pkgManager.forceInstallFlag : ''
+          `${pkgManager.installCommand} ${packageName} ${pkgManager.flags} ${
+            forceInstall ? pkgManager.forceInstallFlag : ""
           }`,
           { cwd: installDir },
           (err, stdout, stderr) => {
@@ -309,43 +310,43 @@ export async function installPackage({
               fs.writeFileSync(
                 join(
                   process.cwd(),
-                  `web3-wallet-wizard-installation-error-${Date.now()}.log`,
+                  `web3-wallet-wizard-installation-error-${Date.now()}.log`
                 ),
                 JSON.stringify({
                   stdout,
                   stderr,
                 }),
-                { encoding: 'utf8' },
+                { encoding: "utf8" }
               );
 
               reject(err);
             } else {
               resolve();
             }
-          },
+          }
         );
       });
     } catch (e) {
-      sdkInstallSpinner.stop('Installation failed.');
+      sdkInstallSpinner.stop("Installation failed.");
       clack.log.error(
         `${chalk.red(
-          'Encountered the following error during installation:',
+          "Encountered the following error during installation:"
           // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         )}\n\n${e}\n\n${chalk.dim(
-          `The wizard has created a \`web3-wallet-wizard-installation-error-*.log\` file. If you think this issue is caused by the Web3 Wallet Wizard, create an issue on GitHub and include the log file's content:\n${ISSUES_URL}`,
-        )}`,
+          `The wizard has created a \`web3-wallet-wizard-installation-error-*.log\` file. If you think this issue is caused by the Web3 Wallet Wizard, create an issue on GitHub and include the log file's content:\n${ISSUES_URL}`
+        )}`
       );
       await abort();
     }
 
     sdkInstallSpinner.stop(
-      `${alreadyInstalled ? 'Updated' : 'Installed'} ${chalk.bold.cyan(
-        packageNameDisplayLabel ?? packageName,
-      )} with ${chalk.bold(pkgManager.label)}.`,
+      `${alreadyInstalled ? "Updated" : "Installed"} ${chalk.bold.cyan(
+        packageNameDisplayLabel ?? packageName
+      )} with ${chalk.bold(pkgManager.label)}.`
     );
 
-    analytics.capture('wizard interaction', {
-      action: 'package installed',
+    analytics.capture("wizard interaction", {
+      action: "package installed",
       package_name: packageName,
       package_manager: pkgManager.name,
       integration,
@@ -358,10 +359,10 @@ export async function installPackage({
 export async function runPrettierIfInstalled({
   installDir,
   integration,
-}: Pick<WizardOptions, 'installDir'> & {
+}: Pick<WizardOptions, "installDir"> & {
   integration: Integration;
 }): Promise<void> {
-  return traceStep('run-prettier', async () => {
+  return traceStep("run-prettier", async () => {
     if (!isInGitRepo()) {
       // We only run formatting on changed files. If we're not in a git repo, we can't find
       // changed files. So let's early-return without showing any formatting-related messages.
@@ -370,9 +371,9 @@ export async function runPrettierIfInstalled({
 
     const changedOrUntrackedFiles = getUncommittedOrUntrackedFiles()
       .map((filename) => {
-        return filename.startsWith('- ') ? filename.slice(2) : filename;
+        return filename.startsWith("- ") ? filename.slice(2) : filename;
       })
-      .join(' ');
+      .join(" ");
 
     if (!changedOrUntrackedFiles.length) {
       // Likewise, if we can't find changed or untracked files, there's no point in running Prettier.
@@ -380,16 +381,16 @@ export async function runPrettierIfInstalled({
     }
 
     const packageJson = await getPackageDotJson({ installDir });
-    const prettierInstalled = hasPackageInstalled('prettier', packageJson);
+    const prettierInstalled = hasPackageInstalled("prettier", packageJson);
 
-    analytics.setTag('prettier-installed', prettierInstalled);
+    analytics.setTag("prettier-installed", prettierInstalled);
 
     if (!prettierInstalled) {
       return;
     }
 
     const prettierSpinner = clack.spinner();
-    prettierSpinner.start('Running Prettier on your files.');
+    prettierSpinner.start("Running Prettier on your files.");
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -401,21 +402,21 @@ export async function runPrettierIfInstalled({
             } else {
               resolve();
             }
-          },
+          }
         );
       });
     } catch (e) {
-      prettierSpinner.stop('Prettier failed to run.');
+      prettierSpinner.stop("Prettier failed to run.");
       clack.log.warn(
-        'Prettier failed to run. There may be formatting issues in your updated files.',
+        "Prettier failed to run. There may be formatting issues in your updated files."
       );
       return;
     }
 
-    prettierSpinner.stop('Prettier has formatted your files.');
+    prettierSpinner.stop("Prettier has formatted your files.");
 
-    analytics.capture('wizard interaction', {
-      action: 'ran prettier',
+    analytics.capture("wizard interaction", {
+      action: "ran prettier",
       integration,
     });
   });
@@ -434,9 +435,9 @@ export async function runPrettierIfInstalled({
 export async function ensurePackageIsInstalled(
   packageJson: PackageDotJson,
   packageId: string,
-  packageName: string,
+  packageName: string
 ): Promise<void> {
-  return traceStep('ensure-package-installed', async () => {
+  return traceStep("ensure-package-installed", async () => {
     const installed = hasPackageInstalled(packageId, packageJson);
 
     analytics.setTag(`${packageName.toLowerCase()}-installed`, installed);
@@ -447,7 +448,7 @@ export async function ensurePackageIsInstalled(
         clack.confirm({
           message: `${packageName} does not seem to be installed. Do you still want to continue?`,
           initialValue: false,
-        }),
+        })
       );
 
       if (!continueWithoutPackage) {
@@ -459,12 +460,12 @@ export async function ensurePackageIsInstalled(
 
 export async function getPackageDotJson({
   installDir,
-}: Pick<WizardOptions, 'installDir'>): Promise<PackageDotJson> {
+}: Pick<WizardOptions, "installDir">): Promise<PackageDotJson> {
   const packageJsonFileContents = await fs.promises
-    .readFile(join(installDir, 'package.json'), 'utf8')
+    .readFile(join(installDir, "package.json"), "utf8")
     .catch(() => {
       clack.log.error(
-        'Could not find package.json. Make sure to run the wizard in the root of your app!',
+        "Could not find package.json. Make sure to run the wizard in the root of your app!"
       );
       return abort();
     });
@@ -477,8 +478,8 @@ export async function getPackageDotJson({
   } catch {
     clack.log.error(
       `Unable to parse your ${chalk.cyan(
-        'package.json',
-      )}. Make sure it has a valid format!`,
+        "package.json"
+      )}. Make sure it has a valid format!`
     );
 
     await abort();
@@ -489,20 +490,20 @@ export async function getPackageDotJson({
 
 export async function updatePackageDotJson(
   packageDotJson: PackageDotJson,
-  { installDir }: Pick<WizardOptions, 'installDir'>,
+  { installDir }: Pick<WizardOptions, "installDir">
 ): Promise<void> {
   try {
     await fs.promises.writeFile(
-      join(installDir, 'package.json'),
+      join(installDir, "package.json"),
       // TODO: maybe figure out the original indentation
       JSON.stringify(packageDotJson, null, 2),
       {
-        encoding: 'utf8',
-        flag: 'w',
-      },
+        encoding: "utf8",
+        flag: "w",
+      }
     );
   } catch {
-    clack.log.error(`Unable to update your ${chalk.cyan('package.json')}.`);
+    clack.log.error(`Unable to update your ${chalk.cyan("package.json")}.`);
 
     await abort();
   }
@@ -510,7 +511,7 @@ export async function updatePackageDotJson(
 
 export async function getPackageManager({
   installDir,
-}: Pick<WizardOptions, 'installDir'>): Promise<PackageManager> {
+}: Pick<WizardOptions, "installDir">): Promise<PackageManager> {
   const detectedPackageManager = detectPackageManger({ installDir });
 
   if (detectedPackageManager) {
@@ -519,26 +520,26 @@ export async function getPackageManager({
 
   const result = await abortIfCancelled(
     clack.select({
-      message: 'Please select your package manager.',
+      message: "Please select your package manager.",
       options: packageManagers.map((packageManager) => ({
         value: packageManager,
         label: packageManager.label,
       })),
-    }),
+    })
   );
 
   // Ensure we're returning the correct type
   const selectedPackageManager = result as PackageManager;
-  analytics.setTag('package-manager', selectedPackageManager.name);
+  analytics.setTag("package-manager", selectedPackageManager.name);
 
   return selectedPackageManager;
 }
 
 export function isUsingTypeScript({
   installDir,
-}: Pick<WizardOptions, 'installDir'>) {
+}: Pick<WizardOptions, "installDir">) {
   try {
-    return fs.existsSync(join(installDir, 'tsconfig.json'));
+    return fs.existsSync(join(installDir, "tsconfig.json"));
   } catch {
     return false;
   }
@@ -552,25 +553,23 @@ export function isUsingTypeScript({
  * @returns project data (token, url)
  */
 export async function getOrAskForProjectData(
-  _options: WizardOptions & {
-  },
+  _options: WizardOptions & {}
 ): Promise<{
   wizardHash: string;
   host: string;
   projectApiKey: string;
 }> {
-  console.log('getOrAskForProjectData');
-  console.log('WizardOptions', _options);
-  const { host, projectApiKey, wizardHash } = await traceStep('login', async () =>
-    await askForWizardLogin(),
+  console.log("getOrAskForProjectData");
+  console.log("WizardOptions", _options);
+  const { host, projectApiKey, wizardHash } = await traceStep(
+    "login",
+    async () => await askForWizardLogin()
   );
 
-
   if (!projectApiKey) {
-    clack.log
-      .info(`we'll add a dummy project API key (${chalk.cyan(
-        `"${DUMMY_PROJECT_API_KEY}"`,
-      )}) for you to replace later.
+    clack.log.info(`we'll add a dummy project API key (${chalk.cyan(
+      `"${DUMMY_PROJECT_API_KEY}"`
+    )}) for you to replace later.
 You can find your Project API key here:
 ${chalk.cyan(`https://dashboard.privy.io/`)}`);
   }
@@ -587,15 +586,17 @@ async function askForWizardLogin(): Promise<ProjectData> {
 
   try {
     wizardHash = (
-      await axios.post<{ hash: string }>(`${WIZARD_PROXY_URL}/api/wizard/initialize`)
+      await axios.post<{ hash: string }>(
+        `${WIZARD_PROXY_URL}/api/wizard/initialize`
+      )
     ).data.hash;
   } catch (e: unknown) {
-    clack.log.error('Loading wizard failed.');
+    clack.log.error("Loading wizard failed.");
     clack.log.info(JSON.stringify(e, null, 2));
     await abort(
       chalk.red(
-        `Please try again in a few minutes and let us know if this issue persists: ${ISSUES_URL}`,
-      ),
+        `Please try again in a few minutes and let us know if this issue persists: ${ISSUES_URL}`
+      )
     );
   }
 
@@ -605,8 +606,8 @@ async function askForWizardLogin(): Promise<ProjectData> {
 
   clack.log.info(
     `${chalk.bold(
-      `If the browser window didn't open automatically, please open the following link to login into Privy:`,
-    )}\n\n${chalk.cyan(urlToOpen)}`,
+      `If the browser window didn't open automatically, please open the following link to login into Privy:`
+    )}\n\n${chalk.cyan(urlToOpen)}`
   );
 
   opn(urlToOpen, { wait: false }).catch(() => {
@@ -615,7 +616,7 @@ async function askForWizardLogin(): Promise<ProjectData> {
 
   const loginSpinner = clack.spinner();
 
-  loginSpinner.start('Waiting for you to log in using the link above');
+  loginSpinner.start("Waiting for you to log in using the link above");
 
   const data = await new Promise<ProjectData>((resolve) => {
     const pollingInterval = setInterval(() => {
@@ -626,8 +627,8 @@ async function askForWizardLogin(): Promise<ProjectData> {
           user_distinct_id: string;
         }>(`${WIZARD_PROXY_URL}/api/wizard/data`, {
           headers: {
-            'Accept-Encoding': 'deflate',
-            'X-web3-Wizard-Hash': wizardHash,
+            "Accept-Encoding": "deflate",
+            "X-web3-Wizard-Hash": wizardHash,
           },
         })
         .then((result) => {
@@ -650,16 +651,16 @@ async function askForWizardLogin(): Promise<ProjectData> {
     const timeout = setTimeout(() => {
       clearInterval(pollingInterval);
       loginSpinner.stop(
-        'Login timed out. No worries - it happens to the best of us.',
+        "Login timed out. No worries - it happens to the best of us."
       );
 
-      analytics.setTag('opened-wizard-link', false);
-      void abort('Please restart the Wizard and log in to complete the setup.');
+      analytics.setTag("opened-wizard-link", false);
+      void abort("Please restart the Wizard and log in to complete the setup.");
     }, 180_000);
   });
 
-  loginSpinner.stop('Login complete.');
-  analytics.setTag('opened-wizard-link', true);
+  loginSpinner.stop("Login complete.");
+  analytics.setTag("opened-wizard-link", true);
   analytics.setDistinctId(data.distinctId);
 
   return data;
@@ -679,15 +680,15 @@ async function askForWizardLogin(): Promise<ProjectData> {
  */
 export async function askForToolConfigPath(
   toolName: string,
-  configFileName: string,
+  configFileName: string
 ): Promise<string | undefined> {
   const hasConfig = await abortIfCancelled(
     clack.confirm({
       message: `Do you have a ${toolName} config file (e.g. ${chalk.cyan(
-        configFileName,
+        configFileName
       )})?`,
       initialValue: true,
-    }),
+    })
   );
 
   if (!hasConfig) {
@@ -697,19 +698,19 @@ export async function askForToolConfigPath(
   return await abortIfCancelled(
     clack.text({
       message: `Please enter the path to your ${toolName} config file:`,
-      placeholder: join('.', configFileName),
+      placeholder: join(".", configFileName),
       validate: (value) => {
         if (!value) {
-          return 'Please enter a path.';
+          return "Please enter a path.";
         }
 
         try {
           fs.accessSync(value);
         } catch {
-          return 'Could not access the file at this path.';
+          return "Could not access the file at this path.";
         }
       },
-    }),
+    })
   );
 }
 
@@ -738,11 +739,12 @@ export async function askForToolConfigPath(
 export async function showCopyPasteInstructions(
   filename: string,
   codeSnippet: string,
-  hint?: string,
+  hint?: string
 ): Promise<void> {
   clack.log.info(
-    `Add the following code to your ${chalk.cyan(basename(filename))} file:${hint ? chalk.dim(` (${chalk.dim(hint)})`) : ''
-    }`,
+    `Add the following code to your ${chalk.cyan(basename(filename))} file:${
+      hint ? chalk.dim(` (${chalk.dim(hint)})`) : ""
+    }`
   );
 
   // Padding the code snippet to be printed with a \n at the beginning and end
@@ -753,10 +755,10 @@ export async function showCopyPasteInstructions(
 
   await abortIfCancelled(
     clack.select({
-      message: 'Did you apply the snippet above?',
-      options: [{ label: 'Yes, continue!', value: true }],
+      message: "Did you apply the snippet above?",
+      options: [{ label: "Yes, continue!", value: true }],
       initialValue: true,
-    }),
+    })
   );
 }
 
@@ -769,7 +771,7 @@ export async function showCopyPasteInstructions(
 type CodeSnippetFormatter = (
   unchanged: (txt: string) => string,
   plus: (txt: string) => string,
-  minus: (txt: string) => string,
+  minus: (txt: string) => string
 ) => string;
 
 /**
@@ -792,7 +794,7 @@ type CodeSnippetFormatter = (
  */
 export function makeCodeSnippet(
   colors: boolean,
-  callback: CodeSnippetFormatter,
+  callback: CodeSnippetFormatter
 ): string {
   const unchanged = (txt: string) => (colors ? chalk.grey(txt) : txt);
   const plus = (txt: string) => (colors ? chalk.greenBright(txt) : txt);
@@ -821,8 +823,8 @@ export function makeCodeSnippet(
 export async function createNewConfigFile(
   filepath: string,
   codeSnippet: string,
-  { installDir }: Pick<WizardOptions, 'installDir'>,
-  moreInformation?: string,
+  { installDir }: Pick<WizardOptions, "installDir">,
+  moreInformation?: string
 ): Promise<boolean> {
   if (!isAbsolute(filepath)) {
     debug(`createNewConfigFile: filepath is not absolute: ${filepath}`);
@@ -844,7 +846,7 @@ export async function createNewConfigFile(
   } catch (e) {
     debug(e);
     clack.log.warn(
-      `Could not create a new ${prettyFilename} file. Please create one manually and follow the instructions below.`,
+      `Could not create a new ${prettyFilename} file. Please create one manually and follow the instructions below.`
     );
   }
 
@@ -852,9 +854,9 @@ export async function createNewConfigFile(
 }
 
 export async function featureSelectionPrompt<F extends ReadonlyArray<Feature>>(
-  features: F,
-): Promise<{ [key in F[number]['id']]: boolean }> {
-  return traceStep('feature-selection', async () => {
+  features: F
+): Promise<{ [key in F[number]["id"]]: boolean }> {
+  return traceStep("feature-selection", async () => {
     const selectedFeatures: Record<string, boolean> = {};
 
     for (const feature of features) {
@@ -865,75 +867,75 @@ export async function featureSelectionPrompt<F extends ReadonlyArray<Feature>>(
           options: [
             {
               value: true,
-              label: 'Yes',
+              label: "Yes",
               hint: feature.enabledHint,
             },
             {
               value: false,
-              label: 'No',
+              label: "No",
               hint: feature.disabledHint,
             },
           ],
-        }),
+        })
       );
 
       // Ensure we're returning the correct type
       selectedFeatures[feature.id] = result as boolean;
     }
 
-    return selectedFeatures as { [key in F[number]['id']]: boolean };
+    return selectedFeatures as { [key in F[number]["id"]]: boolean };
   });
 }
 
 export async function askShouldInstallPackage(
-  pkgName: string,
+  pkgName: string
 ): Promise<boolean> {
   return traceStep(`ask-install-package`, () =>
     abortIfCancelled(
       clack.confirm({
         message: `Do you want to install ${chalk.cyan(pkgName)}?`,
-      }),
-    ),
+      })
+    )
   );
 }
 
 export async function askShouldAddPackageOverride(
   pkgName: string,
-  pkgVersion: string,
+  pkgVersion: string
 ): Promise<boolean> {
   return traceStep(`ask-add-package-override`, () =>
     abortIfCancelled(
       clack.confirm({
         message: `Do you want to add an override for ${chalk.cyan(
-          pkgName,
+          pkgName
         )} version ${chalk.cyan(pkgVersion)}?`,
-      }),
-    ),
+      })
+    )
   );
 }
 
-export async function askForAIConsent(options: Pick<WizardOptions, 'default'>) {
-  return await traceStep('ask-for-ai-consent', async () => {
+export async function askForAIConsent(options: Pick<WizardOptions, "default">) {
+  return await traceStep("ask-for-ai-consent", async () => {
     const aiConsent = options.default
       ? true
       : await abortIfCancelled(
-        clack.select({
-          message: 'Use AI to setup Privy automatically? ✨',
-          options: [
-            {
-              label: 'Yes',
-              value: true,
-              hint: 'We will use AI to help you setup Privy quickly',
-            },
-            {
-              label: 'No',
-              value: false,
-              hint: 'Continue without AI assistance',
-            },
-          ],
-          initialValue: true,
-        }),
-      );
+          clack.select({
+            message: "Use AI to setup Privy automatically? ✨",
+            options: [
+              {
+                label: "Yes",
+                value: true,
+                hint: "We will use AI to help you setup Privy quickly",
+              },
+              {
+                label: "No",
+                value: false,
+                hint: "Continue without AI assistance",
+              },
+            ],
+            initialValue: true,
+          })
+        );
 
     return aiConsent as boolean;
   });

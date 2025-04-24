@@ -1,27 +1,27 @@
-import path from 'path';
-import fs from 'fs';
-import type { FileChange, WizardOptions } from './types';
-import clack from './clack';
-import z from 'zod';
-import { query } from './query';
-import fg from 'fast-glob';
-import { analytics } from './analytics';
-import { Integration } from '../lib/constants';
-import { abort } from './clack-utils';
-import { INTEGRATION_CONFIG } from '../lib/config';
+import path from "path";
+import fs from "fs";
+import type { FileChange, WizardOptions } from "./types";
+import clack from "./clack";
+import z from "zod";
+import { query } from "./query";
+import fg from "fast-glob";
+import { analytics } from "./analytics";
+import { Integration } from "../lib/constants";
+import { abort } from "./clack-utils";
+import { INTEGRATION_CONFIG } from "../lib/config";
 import {
   baseFilterFilesPromptTemplate,
   baseGenerateFileChangesPromptTemplate,
-} from '../lib/prompts';
+} from "../lib/prompts";
 
 export const GLOBAL_IGNORE_PATTERN = [
-  'node_modules',
-  'dist',
-  'build',
-  'public',
-  'static',
-  '.git',
-  '.next',
+  "node_modules",
+  "dist",
+  "build",
+  "public",
+  "static",
+  ".git",
+  ".next",
 ];
 export async function getAllFilesInProject(dir: string): Promise<string[]> {
   let results: string[] = [];
@@ -49,8 +49,8 @@ export async function getAllFilesInProject(dir: string): Promise<string[]> {
 
 export function getDotGitignore({
   installDir,
-}: Pick<WizardOptions, 'installDir'>) {
-  const gitignorePath = path.join(installDir, '.gitignore');
+}: Pick<WizardOptions, "installDir">) {
+  const gitignorePath = path.join(installDir, ".gitignore");
   const gitignoreExists = fs.existsSync(gitignorePath);
 
   if (gitignoreExists) {
@@ -62,13 +62,13 @@ export function getDotGitignore({
 
 export async function updateFile(
   change: FileChange,
-  { installDir }: Pick<WizardOptions, 'installDir'>,
+  { installDir }: Pick<WizardOptions, "installDir">
 ) {
   const dir = path.dirname(path.join(installDir, change.filePath));
   await fs.promises.mkdir(dir, { recursive: true });
   await fs.promises.writeFile(
     path.join(installDir, change.filePath),
-    change.newContent,
+    change.newContent
   );
 }
 
@@ -85,7 +85,7 @@ export async function getFilesToChange({
 }) {
   const filterFilesSpinner = clack.spinner();
 
-  filterFilesSpinner.start('Selecting files to change...');
+  filterFilesSpinner.start("Selecting files to change...");
 
   const filterFilesResponseSchmea = z.object({
     files: z.array(z.string()),
@@ -93,7 +93,7 @@ export async function getFilesToChange({
 
   const prompt = await baseFilterFilesPromptTemplate.format({
     documentation,
-    file_list: relevantFiles.join('\n'),
+    file_list: relevantFiles.join("\n"),
     integration_name: integration,
     integration_rules: INTEGRATION_CONFIG[integration].filterFilesRules,
   });
@@ -101,7 +101,7 @@ export async function getFilesToChange({
   const filterFilesResponse = await query({
     message: prompt,
     schema: filterFilesResponseSchmea,
-    type: 'filter',
+    type: "filter",
     wizardHash,
   });
 
@@ -109,8 +109,8 @@ export async function getFilesToChange({
 
   filterFilesSpinner.stop(`Found ${filesToChange.length} files to change`);
 
-  analytics.capture('wizard interaction', {
-    action: 'detected files to change',
+  analytics.capture("wizard interaction", {
+    action: "detected files to change",
     integration,
     files: filesToChange,
   });
@@ -127,7 +127,7 @@ export async function generateFileContent({
 }) {
   const response = await query({
     message: prompt,
-    type: 'generate',
+    type: "generate",
     schema: z.object({
       newContent: z.string(),
     }),
@@ -155,8 +155,8 @@ export async function generateFileChangesForIntegration({
   for (const filePath of filesToChange) {
     const fileChangeSpinner = clack.spinner();
 
-    analytics.capture('wizard interaction', {
-      action: 'processing file',
+    analytics.capture("wizard interaction", {
+      action: "processing file",
       integration,
       file: filePath,
     });
@@ -166,10 +166,15 @@ export async function generateFileChangesForIntegration({
       try {
         oldContent = await fs.promises.readFile(
           path.join(installDir, filePath),
-          'utf8',
+          "utf8"
         );
       } catch (readError: any) {
-        if (typeof readError === 'object' && readError !== null && 'code' in readError && readError.code === 'ENOENT') {
+        if (
+          typeof readError === "object" &&
+          readError !== null &&
+          "code" in readError &&
+          readError.code === "ENOENT"
+        ) {
           // File doesn't exist, which is fine for new files
         } else {
           await abort(`Error reading file ${filePath}`);
@@ -178,11 +183,11 @@ export async function generateFileChangesForIntegration({
       }
 
       fileChangeSpinner.start(
-        `${oldContent ? 'Updating' : 'Creating'} file ${filePath}`,
+        `${oldContent ? "Updating" : "Creating"} file ${filePath}`
       );
 
       const unchangedFiles = filesToChange.filter(
-        (filePath) => !changes.some((change) => change.filePath === filePath),
+        (filePath) => !changes.some((change) => change.filePath === filePath)
       );
 
       const prompt = await baseGenerateFileChangesPromptTemplate.format({
@@ -193,7 +198,7 @@ export async function generateFileChangesForIntegration({
         integration_rules: INTEGRATION_CONFIG[integration].generateFilesRules,
         changed_files: changes
           .map((change) => `${change.filePath}\n${change.oldContent}`)
-          .join('\n'),
+          .join("\n"),
         unchanged_files: unchangedFiles,
       });
 
@@ -208,11 +213,11 @@ export async function generateFileChangesForIntegration({
       }
 
       fileChangeSpinner.stop(
-        `${oldContent ? 'Updated' : 'Created'} file ${filePath}`,
+        `${oldContent ? "Updated" : "Created"} file ${filePath}`
       );
 
-      analytics.capture('wizard interaction', {
-        action: 'processed file',
+      analytics.capture("wizard interaction", {
+        action: "processed file",
         integration,
         file: filePath,
       });
@@ -221,8 +226,8 @@ export async function generateFileChangesForIntegration({
     }
   }
 
-  analytics.capture('wizard interaction', {
-    action: 'completed file changes',
+  analytics.capture("wizard interaction", {
+    action: "completed file changes",
     integration,
     files: filesToChange,
   });
@@ -233,7 +238,7 @@ export async function generateFileChangesForIntegration({
 export async function getRelevantFilesForIntegration({
   installDir,
   integration,
-}: Pick<WizardOptions, 'installDir'> & {
+}: Pick<WizardOptions, "installDir"> & {
   integration: Integration;
 }) {
   const filterPatterns = INTEGRATION_CONFIG[integration].filterPatterns;
@@ -244,8 +249,8 @@ export async function getRelevantFilesForIntegration({
     ignore: ignorePatterns,
   });
 
-  analytics.capture('wizard interaction', {
-    action: 'detected relevant files',
+  analytics.capture("wizard interaction", {
+    action: "detected relevant files",
     integration,
     number_of_files: filteredFiles.length,
   });

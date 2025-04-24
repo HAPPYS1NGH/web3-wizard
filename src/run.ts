@@ -1,10 +1,10 @@
-import { Integration } from './lib/constants';
-import type { WizardOptions } from './utils/types';
-import { readEnvironment } from './utils/environment';
-import clack from './utils/clack';
-import path from 'path';
-import { INTEGRATION_CONFIG, INTEGRATION_ORDER } from './lib/config';
-import { runNextjsWizard } from './nextjs/nextjs-wizard';
+import { Integration } from "./lib/constants";
+import type { WizardOptions } from "./utils/types";
+import { readEnvironment } from "./utils/environment";
+import clack from "./utils/clack";
+import path from "path";
+import { INTEGRATION_CONFIG, INTEGRATION_ORDER } from "./lib/config";
+import { runNextjsWizard } from "./nextjs/nextjs-wizard";
 
 type Args = {
   integration?: Integration;
@@ -47,17 +47,17 @@ async function runWizard(argv: Args) {
     //   break;
 
     default:
-      clack.log.error('No setup wizard selected!');
+      clack.log.error("No setup wizard selected!");
   }
 }
 
 async function detectIntegration(
-  options: Pick<WizardOptions, 'installDir'>,
+  options: Pick<WizardOptions, "installDir">
 ): Promise<Integration | undefined> {
   const integrationConfigs = Object.entries(INTEGRATION_CONFIG).sort(
     ([a], [b]) =>
       INTEGRATION_ORDER.indexOf(a as Integration) -
-      INTEGRATION_ORDER.indexOf(b as Integration),
+      INTEGRATION_ORDER.indexOf(b as Integration)
   );
 
   for (const [integration, config] of integrationConfigs) {
@@ -69,22 +69,22 @@ async function detectIntegration(
 }
 
 async function getIntegrationForSetup(
-  options: Pick<WizardOptions, 'installDir'>,
+  options: Pick<WizardOptions, "installDir">
 ) {
   const detectedIntegration = await detectIntegration(options);
 
   if (detectedIntegration) {
     clack.log.success(
-      `Detected integration: ${getIntegrationDescription(detectedIntegration)}`,
+      `Detected integration: ${getIntegrationDescription(detectedIntegration)}`
     );
     return detectedIntegration;
   }
 
   const integration: Integration = await clack.select({
-    message: 'What do you want to set up?',
+    message: "What do you want to set up?",
     options: [
-      { value: Integration.nextjs, label: 'Next.js' },
-      { value: Integration.react, label: 'React' },
+      { value: Integration.nextjs, label: "Next.js" },
+      { value: Integration.react, label: "React" },
     ],
   });
 
@@ -94,10 +94,10 @@ async function getIntegrationForSetup(
 function getIntegrationDescription(integration: Integration): string {
   switch (integration) {
     case Integration.nextjs:
-      return 'Next.js';
+      return "Next.js";
     case Integration.react:
-      return 'React';
+      return "React";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }

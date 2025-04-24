@@ -50,4 +50,4 @@ export type FileChange = {
   newContent: string;
 };
 
-export type WalletProvider = 'privy' 
+export type WalletProvider = "privy";

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/typedef */
-import * as fs from 'fs';
-import * as path from 'path';
-import { traceStep } from '../telemetry';
-import { getPackageDotJson, updatePackageDotJson } from './clack-utils';
-import { analytics } from './analytics';
-import type { WizardOptions } from './types';
+import * as fs from "fs";
+import * as path from "path";
+import { traceStep } from "../telemetry";
+import { getPackageDotJson, updatePackageDotJson } from "./clack-utils";
+import { analytics } from "./analytics";
+import type { WizardOptions } from "./types";
 
 export interface PackageManager {
   name: string;
@@ -15,30 +15,30 @@ export interface PackageManager {
   runScriptCommand: string;
   flags: string;
   forceInstallFlag: string;
-  detect: ({ installDir }: Pick<WizardOptions, 'installDir'>) => boolean;
+  detect: ({ installDir }: Pick<WizardOptions, "installDir">) => boolean;
   addOverride: (
     pkgName: string,
     pkgVersion: string,
-    { installDir }: Pick<WizardOptions, 'installDir'>,
+    { installDir }: Pick<WizardOptions, "installDir">
   ) => Promise<void>;
 }
 
 export const BUN: PackageManager = {
-  name: 'bun',
-  label: 'Bun',
-  installCommand: 'bun add',
-  buildCommand: 'bun run build',
-  runScriptCommand: 'bun run',
-  flags: '',
-  forceInstallFlag: '--force',
-  detect: ({ installDir }: Pick<WizardOptions, 'installDir'>) =>
-    ['bun.lockb', 'bun.lock'].some((lockFile) =>
-      fs.existsSync(path.join(installDir, lockFile)),
+  name: "bun",
+  label: "Bun",
+  installCommand: "bun add",
+  buildCommand: "bun run build",
+  runScriptCommand: "bun run",
+  flags: "",
+  forceInstallFlag: "--force",
+  detect: ({ installDir }: Pick<WizardOptions, "installDir">) =>
+    ["bun.lockb", "bun.lock"].some((lockFile) =>
+      fs.existsSync(path.join(installDir, lockFile))
     ),
   addOverride: async (
     pkgName,
     pkgVersion,
-    { installDir }: Pick<WizardOptions, 'installDir'>,
+    { installDir }: Pick<WizardOptions, "installDir">
   ): Promise<void> => {
     const packageDotJson = await getPackageDotJson({ installDir });
     const overrides = packageDotJson.overrides || {};
@@ -51,24 +51,24 @@ export const BUN: PackageManager = {
           [pkgName]: pkgVersion,
         },
       },
-      { installDir: installDir },
+      { installDir: installDir }
     );
   },
 };
 export const YARN_V1: PackageManager = {
-  name: 'yarn',
-  label: 'Yarn V1',
-  installCommand: 'yarn add',
-  buildCommand: 'yarn build',
-  runScriptCommand: 'yarn',
-  flags: '--ignore-workspace-root-check',
-  forceInstallFlag: '--force',
-  detect: ({ installDir }: Pick<WizardOptions, 'installDir'>) => {
+  name: "yarn",
+  label: "Yarn V1",
+  installCommand: "yarn add",
+  buildCommand: "yarn build",
+  runScriptCommand: "yarn",
+  flags: "--ignore-workspace-root-check",
+  forceInstallFlag: "--force",
+  detect: ({ installDir }: Pick<WizardOptions, "installDir">) => {
     try {
       return fs
-        .readFileSync(path.join(installDir, 'yarn.lock'), 'utf-8')
+        .readFileSync(path.join(installDir, "yarn.lock"), "utf-8")
         .slice(0, 500)
-        .includes('yarn lockfile v1');
+        .includes("yarn lockfile v1");
     } catch (e) {
       return false;
     }
@@ -76,7 +76,7 @@ export const YARN_V1: PackageManager = {
   addOverride: async (
     pkgName,
     pkgVersion,
-    { installDir }: Pick<WizardOptions, 'installDir'>,
+    { installDir }: Pick<WizardOptions, "installDir">
   ): Promise<void> => {
     const packageDotJson = await getPackageDotJson({ installDir });
     const resolutions = packageDotJson.resolutions || {};
@@ -89,25 +89,25 @@ export const YARN_V1: PackageManager = {
           [pkgName]: pkgVersion,
         },
       },
-      { installDir },
+      { installDir }
     );
   },
 };
 /** YARN V2/3/4 */
 export const YARN_V2: PackageManager = {
-  name: 'yarn',
-  label: 'Yarn V2/3/4',
-  installCommand: 'yarn add',
-  buildCommand: 'yarn build',
-  runScriptCommand: 'yarn',
-  flags: '',
-  forceInstallFlag: '--force',
-  detect: ({ installDir }: Pick<WizardOptions, 'installDir'>) => {
+  name: "yarn",
+  label: "Yarn V2/3/4",
+  installCommand: "yarn add",
+  buildCommand: "yarn build",
+  runScriptCommand: "yarn",
+  flags: "",
+  forceInstallFlag: "--force",
+  detect: ({ installDir }: Pick<WizardOptions, "installDir">) => {
     try {
       return fs
-        .readFileSync(path.join(installDir, 'yarn.lock'), 'utf-8')
+        .readFileSync(path.join(installDir, "yarn.lock"), "utf-8")
         .slice(0, 500)
-        .includes('__metadata');
+        .includes("__metadata");
     } catch (e) {
       return false;
     }
@@ -115,7 +115,7 @@ export const YARN_V2: PackageManager = {
   addOverride: async (
     pkgName,
     pkgVersion,
-    { installDir }: Pick<WizardOptions, 'installDir'>,
+    { installDir }: Pick<WizardOptions, "installDir">
   ): Promise<void> => {
     const packageDotJson = await getPackageDotJson({ installDir });
     const resolutions = packageDotJson.resolutions || {};
@@ -128,24 +128,24 @@ export const YARN_V2: PackageManager = {
           [pkgName]: pkgVersion,
         },
       },
-      { installDir },
+      { installDir }
     );
   },
 };
 export const PNPM: PackageManager = {
-  name: 'pnpm',
-  label: 'pnpm',
-  installCommand: 'pnpm add',
-  buildCommand: 'pnpm build',
-  runScriptCommand: 'pnpm',
-  flags: '--ignore-workspace-root-check',
-  forceInstallFlag: '--force',
-  detect: ({ installDir }: Pick<WizardOptions, 'installDir'>) =>
-    fs.existsSync(path.join(installDir, 'pnpm-lock.yaml')),
+  name: "pnpm",
+  label: "pnpm",
+  installCommand: "pnpm add",
+  buildCommand: "pnpm build",
+  runScriptCommand: "pnpm",
+  flags: "--ignore-workspace-root-check",
+  forceInstallFlag: "--force",
+  detect: ({ installDir }: Pick<WizardOptions, "installDir">) =>
+    fs.existsSync(path.join(installDir, "pnpm-lock.yaml")),
   addOverride: async (
     pkgName,
     pkgVersion,
-    { installDir }: Pick<WizardOptions, 'installDir'>,
+    { installDir }: Pick<WizardOptions, "installDir">
   ): Promise<void> => {
     const packageDotJson = await getPackageDotJson({ installDir });
     const pnpm = packageDotJson.pnpm || {};
@@ -162,24 +162,24 @@ export const PNPM: PackageManager = {
           },
         },
       },
-      { installDir },
+      { installDir }
     );
   },
 };
 export const NPM: PackageManager = {
-  name: 'npm',
-  label: 'npm',
-  installCommand: 'npm add',
-  buildCommand: 'npm run build',
-  runScriptCommand: 'npm run',
-  flags: '',
-  forceInstallFlag: '--force',
-  detect: ({ installDir }: Pick<WizardOptions, 'installDir'>) =>
-    fs.existsSync(path.join(installDir, 'package-lock.json')),
+  name: "npm",
+  label: "npm",
+  installCommand: "npm add",
+  buildCommand: "npm run build",
+  runScriptCommand: "npm run",
+  flags: "",
+  forceInstallFlag: "--force",
+  detect: ({ installDir }: Pick<WizardOptions, "installDir">) =>
+    fs.existsSync(path.join(installDir, "package-lock.json")),
   addOverride: async (
     pkgName,
     pkgVersion,
-    { installDir }: Pick<WizardOptions, 'installDir'>,
+    { installDir }: Pick<WizardOptions, "installDir">
   ): Promise<void> => {
     const packageDotJson = await getPackageDotJson({ installDir });
     const overrides = packageDotJson.overrides || {};
@@ -192,7 +192,7 @@ export const NPM: PackageManager = {
           [pkgName]: pkgVersion,
         },
       },
-      { installDir },
+      { installDir }
     );
   },
 };
@@ -201,15 +201,15 @@ export const packageManagers = [BUN, YARN_V1, YARN_V2, PNPM, NPM];
 
 export function detectPackageManger({
   installDir,
-}: Pick<WizardOptions, 'installDir'>): PackageManager | null {
-  return traceStep('detect-package-manager', () => {
+}: Pick<WizardOptions, "installDir">): PackageManager | null {
+  return traceStep("detect-package-manager", () => {
     for (const packageManager of packageManagers) {
       if (packageManager.detect({ installDir })) {
-        analytics.setTag('package-manager', packageManager.name);
+        analytics.setTag("package-manager", packageManager.name);
         return packageManager;
       }
     }
-    analytics.setTag('package-manager', 'not-detected');
+    analytics.setTag("package-manager", "not-detected");
     return null;
   });
 }

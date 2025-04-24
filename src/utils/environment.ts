@@ -1,14 +1,14 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import path from 'path';
-import { Integration } from '../lib/constants';
-import clack from './clack';
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import path from "path";
+import { Integration } from "../lib/constants";
+import clack from "./clack";
 
 export function readEnvironment() {
   return {
-    debug: process.env.WEB3_WIZARD_DEBUG === 'true',
+    debug: process.env.WEB3_WIZARD_DEBUG === "true",
     integration: process.env.WEB3_WIZARD_INTEGRATION as Integration | undefined,
     installDir: process.env.WEB3_WIZARD_INSTALL_DIR,
-    default: process.env.WEB3_WIZARD_DEFAULT === 'true',
+    default: process.env.WEB3_WIZARD_DEFAULT === "true",
   };
 }
 
@@ -21,8 +21,8 @@ export async function addOrUpdateEnvironmentVariables({
   installDir: string;
   integration: Integration;
 }) {
-  let envFile = '.env';
-  let envLocalFile = '.env.local';
+  let envFile = ".env";
+  let envLocalFile = ".env.local";
 
   // Check if .env.local exists, prioritize it
   if (existsSync(path.join(installDir, envLocalFile))) {
@@ -47,11 +47,11 @@ async function updateEnvFile(
 ) {
   const filePath = path.join(installDir, filename);
   try {
-    let content = readFileSync(filePath, 'utf-8');
+    let content = readFileSync(filePath, "utf-8");
     let updated = false;
 
     for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`^${key}=.*`, 'm');
+      const regex = new RegExp(`^${key}=.*`, "m");
       if (regex.test(content)) {
         content = content.replace(regex, `${key}=${value}`);
         updated = true;
@@ -77,7 +77,7 @@ async function createEnvFile(
 ) {
   const filePath = path.join(installDir, filename);
   try {
-    let content = '';
+    let content = "";
     for (const [key, value] of Object.entries(variables)) {
       content += `${key}=${value}\n`;
     }
