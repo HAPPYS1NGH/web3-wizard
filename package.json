@@ -1,9 +1,9 @@
 {
-  "name": "@web3/wizard",
-  "version": "0.1.0",
+  "name": "web3-wizard",
+  "version": "1.0.0",
   "homepage": "https://github.com/HAPPYS1NGH/web3-wizard",
   "repository": "https://github.com/HAPPYS1NGH/web3-wizard",
-  "description": "The Web3 wizard helps you to configure Wallet Connection in your project",
+  "description": "The Web3 wizard helps you to configure Privy Wallet in your project",
   "keywords": [
     "web3",
     "wizard",
@@ -15,7 +15,9 @@
     "cli",
     "setup",
     "install",
-    "configure"
+    "configure",
+    "privy",
+    "authentication"
   ],
   "bin": {
     "web3-wizard": "dist/bin.js"
@@ -130,7 +132,7 @@
     ],
     "testEnvironment": "node"
   },
-  "author": "Your Name",
+  "author": "HAPPYS1NGH",
   "license": "MIT",
   "volta": {
     "node": "18.20.6",
