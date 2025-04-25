@@ -1,5 +1,3 @@
-import { getAssetHostFromHost, getUiHostFromHost } from "../utils/urls";
-
 export const getNextjsAppRouterDocs = ({
   language,
 }: {
