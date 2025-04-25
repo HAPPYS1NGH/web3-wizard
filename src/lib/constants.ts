@@ -31,17 +31,13 @@ export interface Args {
   integration: Integration;
 }
 
-export const IS_DEV = false;
-
 export const ISSUES_URL = "https://github.com/HAPPYS1NGH/web3-wizard/issues";
 
 export const ANALYTICS_POSTHOG_PUBLIC_PROJECT_WRITE_KEY =
-  "phc_jzetql2Bkv2WvV1LiVNHTNnFKNgB9VC6H6SE3pmu1oR";
+  "phc_AwG09nEdyi59tp5VYtQLOHJVPwTIADyXLGyMghzdRLy";
 
-export const ANALYTICS_HOST_URL = IS_DEV
-  ? "http://localhost:8010"
-  : "https://us.posthog.com";
+export const ANALYTICS_HOST_URL = "https://us.i.posthog.com";
 
 export const DUMMY_PROJECT_API_KEY = "_YOUR_PRIVY_PROJECT_API_KEY_";
 
-export const WIZARD_PROXY_URL = "https://web3-wizard-proxy.vercel.app/";
+export const WIZARD_PROXY_URL = "https://web3-wizard-proxy.vercel.app";

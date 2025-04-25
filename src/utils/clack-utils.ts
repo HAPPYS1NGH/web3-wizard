@@ -559,8 +559,6 @@ export async function getOrAskForProjectData(
   host: string;
   projectApiKey: string;
 }> {
-  console.log("getOrAskForProjectData");
-  console.log("WizardOptions", _options);
   const { host, projectApiKey, wizardHash } = await traceStep(
     "login",
     async () => await askForWizardLogin()
