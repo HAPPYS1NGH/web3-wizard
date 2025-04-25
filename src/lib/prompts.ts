@@ -56,6 +56,7 @@ Rules:
 - The file structure of the project may be different than the documentation, you should follow the file structure of the project.
 - Use relative imports if you are unsure what the project import paths are.
 {integration_rules}
+- Do not mix multiple file changes in a single response.
 
 
 CONTEXT

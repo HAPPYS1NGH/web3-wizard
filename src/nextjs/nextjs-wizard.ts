@@ -81,17 +81,6 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
       integration: Integration.nextjs,
     });
 
-  await installPackage({
-    packageName: "@privy-io/react-auth",
-    packageNameDisplayLabel: "@privy-io/react-auth",
-    packageManager: packageManagerFromInstallStep,
-    alreadyInstalled: !!packageJson?.dependencies?.["@privy-io/react-auth"],
-    forceInstall: options.forceInstall,
-    askBeforeUpdating: false,
-    installDir: options.installDir,
-    integration: Integration.nextjs,
-  });
-
   const router = await getNextJsRouter(options);
 
   const relevantFiles = await getRelevantFilesForIntegration({

@@ -40,4 +40,4 @@ export const ANALYTICS_HOST_URL = "https://us.i.posthog.com";
 
 export const DUMMY_PROJECT_API_KEY = "_YOUR_PRIVY_PROJECT_API_KEY_";
 
-export const WIZARD_PROXY_URL = "https://web3-wizard-proxy.vercel.app";
+export const WIZARD_PROXY_URL = "https://web3wizard.dev";
