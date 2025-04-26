@@ -182,6 +182,18 @@ export async function generateFileChangesForIntegration({
         }
       }
 
+      // Set higher max listeners or increase the limit before multiple file operations
+      if (
+        process.listenerCount("uncaughtExceptionMonitor") > 5 ||
+        process.listenerCount("unhandledRejection") > 5 ||
+        process.listenerCount("SIGINT") > 5 ||
+        process.listenerCount("SIGTERM") > 5 ||
+        process.listenerCount("exit") > 5
+      ) {
+        // Increase the max listeners limit for the process
+        process.setMaxListeners(20);
+      }
+
       fileChangeSpinner.start(
         `${oldContent ? "Updating" : "Creating"} file ${filePath}`
       );

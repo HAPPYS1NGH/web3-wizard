@@ -34,7 +34,6 @@ export function getNextJsVersionBucket(version: string | undefined): string {
 export async function getNextJsRouter(options: {
   installDir: string;
 }): Promise<NextJsRouter> {
-  console.log("options.installDir", options.installDir);
   const hasAppDir =
     existsSync(path.join(options.installDir, "app")) ||
     existsSync(path.join(options.installDir, "src", "app"));

@@ -80,6 +80,33 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
       installDir: options.installDir,
       integration: Integration.nextjs,
     });
+  await installPackage({
+    packageName: "wagmi",
+    packageNameDisplayLabel: "wagmi",
+    alreadyInstalled: !!packageJson?.dependencies?.["wagmi"],
+    forceInstall: options.forceInstall,
+    askBeforeUpdating: false,
+    installDir: options.installDir,
+    integration: Integration.nextjs,
+  });
+  await installPackage({
+    packageName: "@privy-io/wagmi",
+    packageNameDisplayLabel: "@privy-io/wagmi",
+    alreadyInstalled: !!packageJson?.dependencies?.["@privy-io/wagmi"],
+    forceInstall: options.forceInstall,
+    askBeforeUpdating: false,
+    installDir: options.installDir,
+    integration: Integration.nextjs,
+  });
+  await installPackage({
+    packageName: "@tanstack/react-query",
+    packageNameDisplayLabel: "@tanstack/react-query",
+    alreadyInstalled: !!packageJson?.dependencies?.["@tanstack/react-query"],
+    forceInstall: options.forceInstall,
+    askBeforeUpdating: false,
+    installDir: options.installDir,
+    integration: Integration.nextjs,
+  });
 
   const router = await getNextJsRouter(options);
 
