@@ -5,6 +5,7 @@ import clack from "./utils/clack";
 import path from "path";
 import { INTEGRATION_CONFIG, INTEGRATION_ORDER } from "./lib/config";
 import { runNextjsWizard } from "./nextjs/nextjs-wizard";
+import chalk from "chalk";
 
 type Args = {
   integration?: Integration;
@@ -12,6 +13,7 @@ type Args = {
   forceInstall?: boolean;
   installDir?: string;
   default?: boolean;
+  chain?: string;
 };
 
 export async function run(argv: Args) {
@@ -31,9 +33,28 @@ async function runWizard(argv: Args) {
       ? path.join(process.cwd(), finalArgs.installDir)
       : process.cwd(),
     default: finalArgs.default ?? false,
+    chain: finalArgs.chain,
   };
 
   clack.intro(`Welcome to the Web3 Wallet setup wizard 🚀`);
+
+  // Handle chain parameter - if not provided, prompt the user to select
+  if (!wizardOptions.chain) {
+    const chain = await clack.select({
+      message: "Select blockchain network:",
+      options: [
+        {
+          value: "mainnet",
+          label: `${chalk.green("Ethereum Mainnet")}`,
+        },
+        {
+          value: "rootstock",
+          label: `${chalk.hex("#FF8C00")("Rootstock")}`,
+        },
+      ],
+    });
+    wizardOptions.chain = chain;
+  }
 
   const integration =
     finalArgs.integration ?? (await getIntegrationForSetup(wizardOptions));

@@ -118,6 +118,7 @@ export async function runNextjsWizard(options: WizardOptions): Promise<void> {
   const installationDocumentation = getInstallationDocumentation({
     router,
     language: typeScriptDetected ? "typescript" : "javascript",
+    chain: options.chain,
   });
 
   clack.log.info(
@@ -172,13 +173,15 @@ ${chalk.dim(`If you encounter any issues, let us know here: ${ISSUES_URL}`)}`);
 function getInstallationDocumentation({
   router,
   language,
+  chain,
 }: {
   router: NextJsRouter;
   language: "typescript" | "javascript";
+  chain?: string;
 }) {
   if (router === NextJsRouter.PAGES_ROUTER) {
-    return getNextjsPagesRouterDocs({ language });
+    return getNextjsPagesRouterDocs({ language, chain });
   }
 
-  return getNextjsAppRouterDocs({ language });
+  return getNextjsAppRouterDocs({ language, chain });
 }

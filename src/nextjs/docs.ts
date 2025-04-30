@@ -1,7 +1,9 @@
 export const getNextjsAppRouterDocs = ({
   language,
+  chain,
 }: {
   language: "typescript" | "javascript";
+  chain?: string;
 }) => {
   return `
 ==============================
@@ -49,6 +51,7 @@ Changes:
 Example:
 --------------------------------------------------
 import type { PrivyClientConfig } from '@privy-io/react-auth';
+import { ${chain}, sepolia } from 'viem/chains';
 
  export const privyConfig: PrivyClientConfig = {
     embeddedWallets: {
@@ -56,6 +59,10 @@ import type { PrivyClientConfig } from '@privy-io/react-auth';
         requireUserPasswordOnCreate: true,
         showWalletUIs: true
     },
+    defaultChain: ${chain},
+    supportedChains: [${chain === "rootstock" ? "rootstock, " : ""}${
+    chain === "mainnet" || !chain ? "mainnet, " : ""
+  }sepolia],
     loginMethods: ['wallet', 'email', 'sms'],
     appearance: {
         showWalletLoginFirst: true
@@ -74,15 +81,15 @@ Changes:
 
 Example:
 --------------------------------------------------
-import { mainnet, sepolia } from 'viem/chains';
+import { ${chain}, sepolia } from 'viem/chains';
 import { http } from 'wagmi';
 
 import { createConfig } from '@privy-io/wagmi';
 
 export const wagmiConfig = createConfig({
-    chains: [mainnet, sepolia],
+    chains: [${chain}, sepolia],
     transports: {
-        [mainnet.id]: http(),
+        ${chain}.id]: http(),
         [sepolia.id]: http(),
     },
 });
@@ -148,8 +155,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 export const getNextjsPagesRouterDocs = ({
   language,
+  chain,
 }: {
   language: "typescript" | "javascript";
+  chain?: string;
 }) => {
   return `
 ==============================
@@ -198,6 +207,7 @@ Changes:
 Example:
 --------------------------------------------------
 import type { PrivyClientConfig } from '@privy-io/react-auth';
+import { ${chain}, sepolia } from 'viem/chains';
 
  export const privyConfig: PrivyClientConfig = {
     embeddedWallets: {
@@ -205,6 +215,8 @@ import type { PrivyClientConfig } from '@privy-io/react-auth';
         requireUserPasswordOnCreate: true,
         showWalletUIs: true
     },
+    defaultChain: ${chain},
+    supportedChains: [${chain}, sepolia],
     loginMethods: ['wallet', 'email', 'sms'],
     appearance: {
         showWalletLoginFirst: true
@@ -222,15 +234,16 @@ Changes:
 - Do not replace this with a type-only implementation.
 Example:
 --------------------------------------------------
-import { mainnet, sepolia } from 'viem/chains';
+import { ${chain}, sepolia } from 'viem/chains';
 import { http } from 'wagmi';
 
 import { createConfig } from '@privy-io/wagmi';
 
 export const wagmiConfig = createConfig({
-    chains: [mainnet, sepolia],
+    chains: [${chain}, sepolia],
     transports: {
-        [mainnet.id]: http(),
+        ${chain === "rootstock" ? "[rootstock.id]: http()," : ""}
+        ${chain === "mainnet" || !chain ? "[mainnet.id]: http()," : ""}
         [sepolia.id]: http(),
     },
 });
