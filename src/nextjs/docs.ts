@@ -60,8 +60,9 @@ import { ${chain}, sepolia } from 'viem/chains';
         showWalletUIs: true
     },
     defaultChain: ${chain},
-    supportedChains: [${chain === "rootstock" ? "rootstock, " : ""}${chain === "mainnet" || !chain ? "mainnet, " : ""
-    }sepolia],
+    supportedChains: [${chain === "rootstock" ? "rootstock, " : ""}${
+    chain === "mainnet" || !chain ? "mainnet, " : ""
+  }sepolia],
     loginMethods: ['wallet', 'email', 'sms'],
     appearance: {
         showWalletLoginFirst: true
