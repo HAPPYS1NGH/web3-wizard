@@ -32,6 +32,11 @@ export type WizardOptions = {
   walletProvider?: WalletProvider;
 
   /**
+   * The blockchain network to use.
+   */
+  chain?: string;
+
+  /**
    * Whether to select the default option for all questions automatically.
    */
   default: boolean;
